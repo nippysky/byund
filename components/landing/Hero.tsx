@@ -7,33 +7,40 @@ export default function Hero() {
     <section className="flex flex-col items-start gap-10 pt-4 md:flex-row md:items-center md:justify-between lg:pt-8">
       {/* Left: copy + actions */}
       <div className="max-w-xl space-y-6">
+        {/* Optional tiny label – feels more permanent than “Early preview” */}
         <p className="text-xs font-medium uppercase tracking-[0.25em] text-muted">
-        For Global-First Teams
+          Global USD rail
         </p>
 
-        <h1 className="text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl">
-          Receive USD from anywhere, with one link.
+        <h1 className="text-4xl font-semibold tracking-tight md:text-5xl lg:text-6xl">
+          Move USD beyond borders.
         </h1>
 
-        <p className="text-muted md:text-lg text-[0.9rem]">
-          BYUND gives your business simple USD payment links and a clean hosted
-          checkout — so customers can pay you from anywhere, without you having
-          to stitch together banks, wallets, or extra infrastructure.
+        <p className="text-base text-muted md:text-lg">
+          BYUND is a modern payment rail for businesses that need simple,
+          global, USD-denominated payments — without extra complexity or
+          infrastructure overhead.
         </p>
 
         <div className="flex flex-wrap items-center gap-3 pt-2">
-          <Link href="#pricing">
-            <Button variant="primary">
-              Request early access
+          {/* Primary CTA → register */}
+          <Link href="/register">
+            <Button variant="primary" size="lg">
+              Get started
             </Button>
           </Link>
 
-          <Link href="#how-it-works">
-            <Button variant="secondary">
-              See how it works
+          {/* Secondary CTA → docs */}
+          <Link href="/documentation">
+            <Button variant="secondary" size="lg">
+              View documentation
             </Button>
           </Link>
         </div>
+
+        <p className="pt-4 text-xs text-muted">
+          Powered by <span className="tracking-[0.35em]">B Y U N D</span>
+        </p>
       </div>
 
       {/* Right: visual placeholder for future animated mock */}
@@ -46,26 +53,20 @@ export default function Hero() {
             {/* Mock card – replace with real screenshot / animation */}
             <div className="relative flex h-full flex-col justify-between p-4 md:p-6">
               <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-[11px] font-medium text-muted shadow-sm backdrop-blur">
-                USD payment link
+                Live settlement
                 <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-                <span className="text-[10px] text-muted">Paid</span>
               </div>
 
               <div className="space-y-2 text-xs text-foreground/80">
                 <div className="flex items-center justify-between rounded-2xl bg-white/90 p-3 backdrop-blur">
-                  <div>
-                    <p className="text-[11px] text-muted">Invoice #1043</p>
-                    <p className="text-sm font-semibold">SaaS subscription</p>
-                  </div>
-                  <span className="text-sm font-semibold">$1,250.00</span>
+                  <span>Invoice #1043</span>
+                  <span className="font-semibold">$1,250.00</span>
                 </div>
                 <div className="flex items-center justify-between rounded-2xl bg-white/70 p-3 backdrop-blur">
-                  <p className="text-[11px] text-muted">
-                    Merchant • Lagos, NG
-                  </p>
-                  <p className="text-[11px] text-muted">
+                  <span>Merchant • Lagos, NG</span>
+                  <span className="text-[11px] text-muted">
                     Settled in minutes
-                  </p>
+                  </span>
                 </div>
               </div>
             </div>
@@ -73,8 +74,7 @@ export default function Hero() {
         </div>
 
         <p className="mt-3 text-xs text-muted">
-          Preview card — later, swap this for a real BYUND payment link or
-          dashboard screenshot.
+          Preview card — swap for an actual BYUND dashboard or checkout visual.
         </p>
       </div>
     </section>

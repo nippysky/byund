@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 import Link from "next/link";
 
 export default function FinalCTA() {
-  const email = "founders@byund.com"; // TODO: replace with real inbox
+  const email = "founders@byund.com"; // TODO: plug into real inbox later
 
   return (
     <section className="bg-background py-16 md:py-20">
@@ -19,46 +19,42 @@ export default function FinalCTA() {
           className="rounded-3xl border border-border bg-surface px-6 py-10 text-center md:px-10 md:py-14"
         >
           <p className="text-xs font-medium uppercase tracking-[0.25em] text-muted">
-            Early access
+            Get started
           </p>
 
           <h2 className="mt-3 text-2xl font-semibold tracking-tight md:text-3xl">
-            Join the first teams building on BYUND.
+            Start accepting USD payments with BYUND.
           </h2>
 
           <p className="mx-auto mt-3 max-w-xl text-sm text-muted md:text-base">
-            We&apos;re starting with USD payment links and a hosted checkout
-            experience. If that solves a real need for your business today,
-            tell us about your use case and we&apos;ll explore a fit for this
-            early cohort.
+            Create an account, connect your wallet, and spin up your first USD
+            payment link or hosted checkout in a few minutes. No sales calls
+            required.
           </p>
 
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-            <Link
-              href={`mailto:${email}?subject=BYUND%20early%20access&body=Tell%20us%20about%20your%20business%2C%20current%20payment%20flows%2C%20and%20why%20USD%20payment%20links%20matter.`}
-            >
-              <Button variant="primary">
-                Request early access
+            <Link href="/register">
+              <Button variant="primary" size="lg">
+                Get started
               </Button>
             </Link>
 
-            <Link
-              href={`mailto:${email}?subject=BYUND%20call&body=Share%20a%20few%20lines%20about%20your%20use%20case%20and%20what%20you%27d%20like%20to%20discuss.`}
-            >
-              <Button variant="secondary">
-                Talk to the team
+            <Link href="/docs">
+              <Button variant="secondary" size="lg">
+                View documentation
               </Button>
             </Link>
           </div>
 
           <p className="mt-4 text-[11px] text-muted">
-            If you need features beyond V1 (like invoicing automation or
-            subscription billing), we may not be able to support them
-            immediately — but your needs help shape our roadmap.
-          </p>
-
-          <p className="mt-2 text-[11px] text-muted">
-            Powered by <span className="tracking-[0.35em]">B Y U N D</span>
+            Have a larger-volume or more complex use case?{" "}
+            <a
+              href={`mailto:${email}?subject=BYUND%20questions`}
+              className="underline underline-offset-4"
+            >
+              Talk to the team
+            </a>
+            .
           </p>
         </motion.div>
       </div>

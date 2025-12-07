@@ -1,19 +1,15 @@
-// components/layout/Header.tsx
 "use client";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-
-function classNames(...values: (string | false | null | undefined)[]) {
-  return values.filter(Boolean).join(" ");
-}
+import { cn } from "@/lib/utils";
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
     const onScroll = () => {
-      setIsScrolled(window.scrollY > 8);
+      setIsScrolled(window.scrollY > 4);
     };
     onScroll();
     window.addEventListener("scroll", onScroll);
@@ -22,58 +18,40 @@ export default function Header() {
 
   return (
     <header
-      className={classNames(
+      className={cn(
         "fixed inset-x-0 top-0 z-40 flex justify-center transition-all duration-300",
         isScrolled
-          ? "bg-white/90 backdrop-blur-md border-b border-border"
-          : "bg-white/75 backdrop-blur-sm"
+          ? "bg-white/90 border-b border-border backdrop-blur-lg"
+          : "bg-white/70 backdrop-blur-sm"
       )}
     >
       <div className="flex h-16 w-full max-w-7xl items-center justify-between px-6 lg:px-10">
+        
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2">
-          <span className="text-[18px] font-semibold tracking-tight">
+        <Link href="/" className="flex items-center">
+          <span className="text-[18px] font-semibold tracking-[-0.03em]">
             BYUND
           </span>
         </Link>
 
-        {/* Desktop nav */}
+        {/* Nav */}
         <nav className="hidden items-center gap-7 text-sm md:flex">
           <Link
-            href="#how-it-works"
-            className="font-medium text-foreground/85 transition-all duration-150 hover:text-foreground"
+            href="/docs"
+            className="font-medium text-foreground/90 tracking-[-0.01em] transition-all hover:text-foreground"
           >
-            How it works
-          </Link>
-          <Link
-            href="#pricing"
-            className="font-medium text-foreground/85 transition-all duration-150 hover:text-foreground"
-          >
-            Pricing
-          </Link>
-          <Link
-            href="#developers"
-            className="font-medium text-foreground/85 transition-all duration-150 hover:text-foreground"
-          >
-            Developers
-          </Link>
-          <Link
-            href="#"
-            className="font-medium text-foreground/85 transition-all duration-150 hover:text-foreground"
-          >
-            Docs
+            Documentation
           </Link>
 
-          {/* Sign in */}
           <Link
             href="/signin"
-            className={classNames(
+            className={cn(
               "inline-flex items-center justify-center",
-              "rounded-md bg-accent text-white text-xs font-semibold",
-              "px-4 py-1.5 tracking-tight",
+              "rounded-md bg-accent text-white text-xs font-semibold tracking-tight",
+              "px-4 py-2",
               "shadow-[0_2px_6px_rgba(0,102,255,0.28)]",
               "hover:shadow-[0_4px_14px_rgba(0,102,255,0.32)]",
-              "hover:-translate-y-1px active:translate-y-0",
+              "hover:-translate-y-px active:translate-y-0",
               "transition-all duration-200"
             )}
           >
@@ -85,19 +63,20 @@ export default function Header() {
         <div className="flex items-center gap-2 md:hidden">
           <Link
             href="/signin"
-            className={classNames(
+            className={cn(
               "inline-flex items-center justify-center",
-              "rounded-md bg-accent text-white text-xs font-semibold",
-              "px-3 py-1.5",
+              "rounded-md bg-accent text-white text-xs font-semibold tracking-tight",
+              "px-3 py-2",
               "shadow-[0_2px_6px_rgba(0,102,255,0.28)]",
               "hover:shadow-[0_4px_14px_rgba(0,102,255,0.32)]",
-              "hover:-translate-y-1px active:translate-y-0",
+              "hover:-translate-y-px active:translate-y-0",
               "transition-all duration-200"
             )}
           >
             Sign in
           </Link>
         </div>
+
       </div>
     </header>
   );

@@ -3,10 +3,10 @@ import Header from "@/components/layout/Header";
 import Hero from "@/components/landing/Hero";
 import HowItWorks from "@/components/landing/HowItWorks";
 import WhoItsFor from "@/components/landing/WhoItsFor";
-import ForDevelopers from "@/components/landing/ ForDevelopers";
 import FinalCTA from "@/components/landing/FinalCTA";
 import Pricing from "@/components/landing/Pricing";
 import Footer from "@/components/layout/Footer";
+import ForDevelopers from "@/components/landing/ForDevelopers";
 
 
 export default function Home() {
