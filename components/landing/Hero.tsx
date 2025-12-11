@@ -13,13 +13,11 @@ export default function Hero() {
         </p>
 
         <h1 className="text-4xl font-semibold tracking-tight md:text-5xl lg:text-6xl">
-          Move USD beyond borders.
+         Accept USD payments globally and settle directly to your wallet.
         </h1>
 
         <p className="text-base text-muted md:text-lg">
-          BYUND is a modern payment rail for businesses that need simple,
-          global, USD-denominated payments — without extra complexity or
-          infrastructure overhead.
+          One rail, one dashboard, no banks or new accounts. BYUND handles the digital dollar plumbing so your team only thinks about customers and settlement.
         </p>
 
         <div className="flex flex-wrap items-center gap-3 pt-2">
@@ -37,10 +35,6 @@ export default function Hero() {
             </Button>
           </Link>
         </div>
-
-        <p className="pt-4 text-xs text-muted">
-          Powered by <span className="tracking-[0.35em]">B Y U N D</span>
-        </p>
       </div>
 
       {/* Right: visual placeholder for future animated mock */}
