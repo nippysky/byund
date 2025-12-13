@@ -61,7 +61,7 @@ export function SignInForm() {
           autoComplete="email"
           {...register("email")}
           className={errors.email ? errorInput : normalInput}
-          placeholder="you@company.com"
+          placeholder="you@example.com"
         />
         {errors.email && (
           <p className="text-xs text-[#ef4444]">{errors.email.message}</p>

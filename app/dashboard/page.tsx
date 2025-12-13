@@ -1,6 +1,6 @@
 // app/dashboard/page.tsx
 import PageHeader from "@/components/dashboard/PageHeader";
-import { Button } from "@/components/ui/Button";
+import { CreatePaymentLinkButton } from "@/components/dashboard/CreatePaymentLinkButton";
 
 export default function DashboardHome() {
   return (
@@ -8,11 +8,7 @@ export default function DashboardHome() {
       <PageHeader
         title="Overview"
         description="High-level view of your USD volumes, recent payments, and live status. This is the starting point for V1."
-        actions={
-          <Button variant="primary" size="sm">
-            Create payment link
-          </Button>
-        }
+        actions={<CreatePaymentLinkButton size="sm" />}
       />
 
       <div className="grid gap-4 md:grid-cols-3">

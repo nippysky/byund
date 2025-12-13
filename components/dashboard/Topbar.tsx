@@ -5,19 +5,31 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { Menu, X, LayoutDashboard, LinkIcon, Activity, Settings } from "lucide-react";
+import {
+  Menu,
+  X,
+  LayoutDashboard,
+  LinkIcon,
+  Settings,
+} from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 const navItems = [
   { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { label: "Payment links", href: "/dashboard/payment-links", icon: LinkIcon },
-  { label: "Activity", href: "/dashboard/activity", icon: Activity },
   { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
-export default function Topbar() {
+type TopbarProps = {
+  mode: "test" | "live";
+  onModeChange: (mode: "test" | "live") => void;
+};
+
+export default function Topbar({ mode, onModeChange }: TopbarProps) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+
+  const isLive = mode === "live";
 
   return (
     <>
@@ -40,10 +52,34 @@ export default function Topbar() {
         </div>
 
         <div className="flex flex-1 justify-end gap-3 md:gap-4">
-          {/* “Test mode” pill (stub for now) */}
+          {/* Environment pill – desktop */}
           <div className="hidden items-center gap-2 rounded-full border border-border bg-surface px-3 py-1 text-xs text-muted md:flex">
-            <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-            Test mode
+            <span
+              className={cn(
+                "h-1.5 w-1.5 rounded-full",
+                isLive ? "bg-emerald-500" : "bg-amber-400"
+              )}
+            />
+            <button
+              type="button"
+              onClick={() => onModeChange("test")}
+              className={cn(
+                "rounded-full px-2 py-0.5 text-[11px]",
+                !isLive ? "bg-accent text-white" : "text-muted"
+              )}
+            >
+              Test
+            </button>
+            <button
+              type="button"
+              onClick={() => onModeChange("live")}
+              className={cn(
+                "rounded-full px-2 py-0.5 text-[11px]",
+                isLive ? "bg-accent text-white" : "text-muted"
+              )}
+            >
+              Live
+            </button>
           </div>
 
           {/* Account stub */}
@@ -67,6 +103,30 @@ export default function Topbar() {
       {/* Mobile nav sheet */}
       {open && (
         <div className="border-b border-border bg-white/98 px-4 pb-3 pt-2 shadow-sm md:hidden">
+          {/* Mobile environment toggle */}
+          <div className="mb-3 inline-flex items-center gap-1 rounded-full border border-border bg-surface px-1 py-0.5 text-[11px] text-muted">
+            <button
+              type="button"
+              onClick={() => onModeChange("test")}
+              className={cn(
+                "rounded-full px-2 py-0.5",
+                !isLive ? "bg-accent text-white" : "text-muted"
+              )}
+            >
+              Test
+            </button>
+            <button
+              type="button"
+              onClick={() => onModeChange("live")}
+              className={cn(
+                "rounded-full px-2 py-0.5",
+                isLive ? "bg-accent text-white" : "text-muted"
+              )}
+            >
+              Live
+            </button>
+          </div>
+
           <nav className="flex flex-col gap-1 text-sm">
             {navItems.map((item) => {
               const Icon = item.icon;

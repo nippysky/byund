@@ -110,3 +110,7 @@ button {
 .text-action:hover {
   text-decoration: underline;
 }
+
+button {
+  cursor: pointer;
+}

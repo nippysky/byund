@@ -7,7 +7,6 @@ import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
   LinkIcon,
-  Activity,
   Settings,
 } from "lucide-react";
 
@@ -23,19 +22,19 @@ const navItems = [
     icon: LinkIcon,
   },
   {
-    label: "Activity",
-    href: "/dashboard/activity",
-    icon: Activity,
-  },
-  {
     label: "Settings",
     href: "/dashboard/settings",
     icon: Settings,
   },
 ];
 
-export default function Sidebar() {
+type SidebarProps = {
+  mode: "test" | "live";
+};
+
+export default function Sidebar({ mode }: SidebarProps) {
   const pathname = usePathname();
+  const isLive = mode === "live";
 
   return (
     <aside className="hidden w-60 flex-none border-r border-border bg-white/95 md:flex md:flex-col">
@@ -79,7 +78,17 @@ export default function Sidebar() {
 
       {/* Bottom small meta */}
       <div className="border-t border-border px-5 py-3 text-[11px] text-muted">
-        <p>Test mode • V1 dashboard</p>
+        <div className="flex items-center gap-2">
+          <span
+            className={cn(
+              "h-1.5 w-1.5 rounded-full",
+              isLive ? "bg-emerald-500" : "bg-amber-400"
+            )}
+          />
+          <p>
+            {isLive ? "Live mode • Real funds" : "Test mode • Safe sandbox"}
+          </p>
+        </div>
       </div>
     </aside>
   );
