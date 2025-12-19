@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import PayPageClient from "@/components/shared/PayPageClient";
 
+
 export type PayPageLink = {
   publicId: string;
 
@@ -15,10 +16,9 @@ export type PayPageLink = {
   mode: "fixed" | "variable";
   fixedAmountCents: number | null;
 
-  // Branding
-  brandLeftBg: string;
-  brandLeftFg: string;
-  brandAccent: string;
+  // ✅ Branding (V1 simplified)
+  brandBg: string;
+  brandText: string;
 };
 
 async function getLink(publicId: string) {
@@ -35,9 +35,8 @@ async function getLink(publicId: string) {
       merchant: {
         select: {
           publicName: true,
-          brandLeftBg: true,
-          brandLeftFg: true,
-          brandAccent: true,
+          brandBg: true,
+          brandText: true,
         },
       },
     },
@@ -70,10 +69,7 @@ export async function generateMetadata({
   return {
     title,
     description,
-    openGraph: {
-      title,
-      description,
-    },
+    openGraph: { title, description },
   };
 }
 
@@ -95,9 +91,8 @@ export default async function PayPage({
     currency: "USD",
     mode: link.mode === "FIXED" ? "fixed" : "variable",
     fixedAmountCents: link.fixedAmountCents ?? null,
-    brandLeftBg: link.merchant.brandLeftBg,
-    brandLeftFg: link.merchant.brandLeftFg,
-    brandAccent: link.merchant.brandAccent,
+    brandBg: link.merchant.brandBg,
+    brandText: link.merchant.brandText,
   };
 
   return <PayPageClient link={payload} currentYear={new Date().getFullYear()} />;

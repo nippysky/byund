@@ -2,7 +2,14 @@
 "use client";
 
 import type { ReactNode } from "react";
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 import { ToastProvider, useToast } from "@/components/ui/Toast";
@@ -14,6 +21,7 @@ type DashboardContextValue = {
   isModeHydrated: boolean;
   setMode: (next: Mode) => Promise<void>;
   profile: { name: string; email: string } | null;
+  isLoggingOut: boolean;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
 };
@@ -33,6 +41,7 @@ function ShellInner({ children }: { children: ReactNode }) {
   const [isModeHydrated, setIsModeHydrated] = useState(false);
 
   const [profile, setProfile] = useState<{ name: string; email: string } | null>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -40,6 +49,7 @@ function ShellInner({ children }: { children: ReactNode }) {
         method: "GET",
         credentials: "same-origin",
         headers: { Accept: "application/json" },
+        cache: "no-store",
       });
 
       const data = await res.json().catch(() => ({}));
@@ -89,6 +99,7 @@ function ShellInner({ children }: { children: ReactNode }) {
           credentials: "same-origin",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ mode: next }),
+          cache: "no-store",
         });
 
         const data = await res.json().catch(() => ({}));
@@ -108,27 +119,47 @@ function ShellInner({ children }: { children: ReactNode }) {
   );
 
   const logout = useCallback(async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+
     try {
       const res = await fetch("/api/auth/logout", {
         method: "POST",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
+        cache: "no-store",
       });
 
-      if (!res.ok) throw new Error("Logout failed");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.ok) throw new Error("Logout failed");
+
+      // Clear client state immediately (snappy UX)
+      setProfile(null);
+      setModeState("TEST");
+
+      // Hard redirect ensures no cached dashboard UI hangs around
       window.location.assign("/signin");
     } catch {
+      setIsLoggingOut(false);
       toast({
         title: "Logout failed",
         variant: "error",
         message: "Try again.",
       });
     }
-  }, [toast]);
+  }, [toast, isLoggingOut]);
 
   const value = useMemo<DashboardContextValue>(
-    () => ({ mode, isModeHydrated, setMode, profile, logout, refresh }),
-    [mode, isModeHydrated, setMode, profile, logout, refresh]
+    () => ({
+      mode,
+      isModeHydrated,
+      setMode,
+      profile,
+      isLoggingOut,
+      logout,
+      refresh,
+    }),
+    [mode, isModeHydrated, setMode, profile, isLoggingOut, logout, refresh]
   );
 
   return (

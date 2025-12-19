@@ -2,6 +2,8 @@
 import Link from "next/link";
 import { SignInForm } from "./SignInForm";
 
+type SearchParams = Record<string, string | string[] | undefined>;
+
 function safeNextPath(raw: unknown) {
   if (typeof raw !== "string" || !raw) return "/dashboard";
   if (!raw.startsWith("/")) return "/dashboard";
@@ -9,12 +11,14 @@ function safeNextPath(raw: unknown) {
   return raw;
 }
 
-export default function SignInPage({
+export default async function SignInPage({
   searchParams,
 }: {
-  searchParams?: Record<string, string | string[] | undefined>;
+  searchParams?: SearchParams | Promise<SearchParams>;
 }) {
-  const rawNext = searchParams?.next;
+  const sp = (await searchParams) ?? {};
+
+  const rawNext = sp.next;
   const nextValue = Array.isArray(rawNext) ? rawNext[0] : rawNext;
   const nextPath = safeNextPath(nextValue);
 
@@ -24,21 +28,17 @@ export default function SignInPage({
         {/* Logo row */}
         <header className="mb-10 flex items-center">
           <Link href="/" className="inline-flex items-center gap-2">
-            <span className="text-[20px] font-semibold tracking-[-0.04em]">
-              BYUND
-            </span>
+            <span className="text-[20px] font-semibold tracking-[-0.04em]">BYUND</span>
           </Link>
         </header>
 
         {/* Main auth card */}
         <main className="flex flex-1 flex-col justify-center">
           <div className="rounded-2xl border border-border bg-white px-6 py-7 shadow-sm">
-            <h1 className="text-xl font-semibold tracking-tight">
-              Sign in to BYUND
-            </h1>
+            <h1 className="text-xl font-semibold tracking-tight">Sign in to BYUND</h1>
             <p className="mt-1 text-sm text-muted">
-              Use the email and password you registered with. You can update
-              business and payout details from your dashboard.
+              Use the email and password you registered with. You can update business and
+              payout details from your dashboard.
             </p>
 
             <SignInForm nextPath={nextPath} />
@@ -48,16 +48,10 @@ export default function SignInPage({
           <footer className="mt-6 flex items-center justify-between text-[11px] text-muted">
             <span>© {new Date().getFullYear()} BYUND</span>
             <div className="flex gap-4">
-              <Link
-                href="/privacy"
-                className="hover:text-foreground hover:underline"
-              >
+              <Link href="/privacy" className="hover:text-foreground hover:underline">
                 Privacy
               </Link>
-              <Link
-                href="/terms"
-                className="hover:text-foreground hover:underline"
-              >
+              <Link href="/terms" className="hover:text-foreground hover:underline">
                 Terms
               </Link>
             </div>

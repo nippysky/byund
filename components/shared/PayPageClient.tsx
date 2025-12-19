@@ -16,9 +16,9 @@ export type PayPageLink = {
   mode: "fixed" | "variable";
   fixedAmountCents: number | null;
 
-  brandLeftBg: string;
-  brandLeftFg: string;
-  brandAccent: string;
+  // ✅ Branding (V1 simplified)
+  brandBg: string;
+  brandText: string;
 };
 
 type Props = {
@@ -26,29 +26,25 @@ type Props = {
   currentYear: number;
 };
 
-const MAX_USD_CENTS = 10_000_000_00; // $10,000,000.00 (prevents insane UI overflow + safer limits)
+const MAX_USD_CENTS = 10_000_000_00; // $10,000,000.00
 
 function normalizeMoneyInput(raw: string): string {
   let cleaned = raw.replace(/[^\d.]/g, "");
-
   const firstDotIndex = cleaned.indexOf(".");
   if (firstDotIndex !== -1) {
     const before = cleaned.slice(0, firstDotIndex + 1);
     const after = cleaned.slice(firstDotIndex + 1).replace(/\./g, "");
     cleaned = before + after;
   }
-
   if (cleaned === ".") return "0.";
 
   const [rawInt = "", rawDec] = cleaned.split(".");
   let intPart = rawInt.replace(/^0+(?=\d)/, "");
   if (intPart === "") intPart = rawDec !== undefined ? "0" : "";
-
   if (rawDec === undefined) return intPart;
 
   const decPart = rawDec.slice(0, 2);
   if (decPart === "") return intPart + ".";
-
   return `${intPart}.${decPart}`;
 }
 
@@ -80,6 +76,22 @@ function safeUsdToCents(input: string): { cents: number | null; reason?: string 
   return { cents: Math.round(total) };
 }
 
+/** Pick readable text for colored buttons */
+function readableTextOn(bgHex: string): "#ffffff" | "#0b1220" {
+  // expects #RRGGBB
+  const hex = bgHex.replace("#", "");
+  if (hex.length !== 6) return "#ffffff";
+  const r = parseInt(hex.slice(0, 2), 16);
+  const g = parseInt(hex.slice(2, 4), 16);
+  const b = parseInt(hex.slice(4, 6), 16);
+
+  // perceived luminance
+  const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+
+  // brighter bg => dark text, darker bg => white text
+  return luminance > 0.65 ? "#0b1220" : "#ffffff";
+}
+
 export default function PayPageClient({ link, currentYear }: Props) {
   const [variableAmount, setVariableAmount] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -89,9 +101,7 @@ export default function PayPageClient({ link, currentYear }: Props) {
   const amountState = useMemo(() => {
     if (!isVariable) {
       const cents = link.fixedAmountCents ?? null;
-      if (cents && cents > MAX_USD_CENTS) {
-        return { cents: null, reason: `Amount exceeds max allowed.` };
-      }
+      if (cents && cents > MAX_USD_CENTS) return { cents: null, reason: "Amount exceeds max allowed." };
       return { cents };
     }
     return safeUsdToCents(variableAmount);
@@ -99,17 +109,11 @@ export default function PayPageClient({ link, currentYear }: Props) {
 
   const amountCents = amountState.cents;
   const hasValidAmount = typeof amountCents === "number" && amountCents > 0;
-
   const canSubmit = hasValidAmount && !isSubmitting;
 
   const bigAmount = hasValidAmount ? usdCentsToPretty(amountCents!) : "0.00";
 
-  const initials = link.merchantName
-    .split(" ")
-    .map((p) => p[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+  const payBtnText = readableTextOn(link.brandBg);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -117,7 +121,6 @@ export default function PayPageClient({ link, currentYear }: Props) {
 
     setIsSubmitting(true);
     try {
-      // TODO: next step is create Payment + return checkout intent + open wallet
       console.log("Checkout submit:", {
         publicId: link.publicId,
         amountUsdCents: amountCents,
@@ -135,57 +138,41 @@ export default function PayPageClient({ link, currentYear }: Props) {
         {/* LEFT: merchant branded panel */}
         <section
           className="relative flex min-h-[46vh] flex-col p-6 lg:min-h-screen lg:p-10"
-          style={{ backgroundColor: link.brandLeftBg, color: link.brandLeftFg }}
+          style={{ backgroundColor: link.brandBg, color: link.brandText }}
         >
-          <div className="flex items-center justify-between">
-            <div className="inline-flex items-center gap-2">
-              <div
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-[13px] font-semibold"
-                style={{ color: link.brandAccent }}
-              >
-                {initials}
+          {/* ✅ Centered content (no clustered top) */}
+          <div className="flex flex-1 flex-col justify-center">
+            <div className="mx-auto w-full max-w-xl">
+              <div className="flex items-center justify-between gap-4">
+                <div className="leading-tight">
+                  <p className="text-[11px] uppercase tracking-[0.22em] opacity-70">
+                    Payment to
+                  </p>
+                  <p className="text-[18px] font-semibold tracking-[-0.03em]">
+                    {link.merchantName}
+                  </p>
+                </div>
+
+                <span className="inline-flex items-center rounded-full bg-white/70 px-3 py-1 text-[11px] font-medium text-black/70">
+                  USDC • Base
+                </span>
               </div>
-              <div className="leading-tight">
-                <p className="text-[11px] uppercase tracking-[0.22em] opacity-70">
-                  Payment to
+
+              <div className="mt-10">
+                <p className="text-[12px] uppercase tracking-[0.22em] opacity-70">
+                  For
                 </p>
-                <p className="text-[18px] font-semibold tracking-[-0.03em]">
-                  {link.merchantName}
-                </p>
+                <h1 className="mt-2 text-[28px] font-semibold leading-tight tracking-[-0.04em] lg:text-[34px]">
+                  {link.linkName}
+                </h1>
+
+                {link.description ? (
+                  <p className="mt-3 text-[13px] opacity-80 lg:text-[14px]">
+                    {link.description}
+                  </p>
+                ) : null}
               </div>
             </div>
-
-            <span className="inline-flex items-center rounded-full bg-white/70 px-3 py-1 text-[11px] font-medium text-black/70">
-              USDC • Base
-            </span>
-          </div>
-
-          <div className="mt-10 max-w-xl">
-            <p className="text-[12px] uppercase tracking-[0.22em] opacity-70">
-              For
-            </p>
-            <h1 className="mt-2 text-[28px] font-semibold leading-tight tracking-[-0.04em] lg:text-[34px]">
-              {link.linkName}
-            </h1>
-
-            {/* ✅ Small, clean description only (no long explainer here) */}
-            {link.description ? (
-              <p className="mt-3 text-[13px] opacity-80 lg:text-[14px]">
-                {link.description}
-              </p>
-            ) : null}
-          </div>
-
-          {/* Bottom bullet/meta (pinned to bottom) */}
-          <div className="mt-auto pt-10">
-            <ul className="space-y-2 text-[11px] opacity-75">
-              <li className="flex items-start gap-2">
-                <span className="mt-1.5 h-1.5 w-1.5 flex-none rounded-full bg-black/25" />
-                <span>
-                  BYUND never holds your funds. Settlement is direct to the merchant wallet.
-                </span>
-              </li>
-            </ul>
           </div>
         </section>
 
@@ -197,11 +184,9 @@ export default function PayPageClient({ link, currentYear }: Props) {
                 Amount
               </p>
 
-              {/* ✅ Safe, contained amount row */}
               <div className="mt-3">
                 <div className="flex items-baseline gap-2">
                   <span className="text-[13px] font-medium text-muted">USD</span>
-
                   <div className="min-w-0 flex-1 overflow-hidden">
                     <span className="block truncate text-[40px] font-semibold leading-none tracking-[-0.05em] [font-variant-numeric:tabular-nums] lg:text-[44px]">
                       {bigAmount}
@@ -250,13 +235,21 @@ export default function PayPageClient({ link, currentYear }: Props) {
                   <p className="text-[11px] text-[#ef4444]">{amountState.reason}</p>
                 ) : null}
 
-                <Button type="submit" className="w-full justify-center" disabled={!canSubmit}>
+                {/* ✅ Merchant-branded pay button */}
+                <Button
+                  type="submit"
+                  className="w-full justify-center"
+                  disabled={!canSubmit}
+                  style={{
+                    backgroundColor: link.brandBg,
+                    color: payBtnText,
+                  }}
+                >
                   {isSubmitting ? "Processing…" : "Pay now"}
                 </Button>
               </form>
             </div>
 
-            {/* ✅ Moved from inside card to bottom of section */}
             <div className="mt-6 flex items-center justify-center gap-3 text-[11px] text-muted">
               <span>
                 Powered by <span className="font-semibold text-foreground">BYUND</span>

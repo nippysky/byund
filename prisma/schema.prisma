@@ -34,19 +34,19 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  merchant     Merchant?
-  sessions     Session[]
+  merchant Merchant?
+  sessions Session[]
 }
 
 model Session {
-  id        String   @id @default(cuid())
+  id String @id @default(cuid())
 
   // Store ONLY the hash of the session token.
   // If the DB is leaked, attackers still can't replay sessions.
-  tokenHash String   @unique
+  tokenHash String @unique
 
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   expiresAt DateTime
   createdAt DateTime @default(now())
@@ -56,88 +56,218 @@ model Session {
 }
 
 model Merchant {
-  id               String        @id @default(cuid())
+  id String @id @default(cuid())
 
-  userId           String        @unique
-  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   publicName       String
-
-  // Allow signup without forcing wallet config.
   settlementWallet String?
 
-  // Dashboard mode stored in DB (not localStorage)
-  dashboardMode    DashboardMode @default(TEST)
+  dashboardMode DashboardMode @default(TEST)
 
-  // Checkout branding defaults
-  brandLeftBg      String        @default("#EAF2FF")
-  brandLeftFg      String        @default("#0B1220")
-  brandAccent      String        @default("#1E6BFF")
+  // ✅ Checkout branding defaults (V1 simplified)
+  brandBg   String @default("#EAF2FF") // left panel background
+  brandText String @default("#0B1220") // left panel text color
 
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  links            PaymentLink[]
+  links PaymentLink[]
+
+  // ✅ V2 dev platform (additive, unused in V1)
+  apiKeys          ApiKey[]
+  webhookEndpoints WebhookEndpoint[]
 }
 
 model PaymentLink {
-  id              String         @id @default(cuid())
+  id String @id @default(cuid())
 
   // Stable public identifier used in URLs: /pay/[publicId]
-  publicId         String        @unique
+  publicId String @unique
 
-  merchantId       String
-  merchant         Merchant       @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  merchantId String
+  merchant   Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
 
-  // ✅ Add this:
-  environment      DashboardMode  @default(TEST)
+  environment DashboardMode @default(TEST)
 
-  name             String
-  description      String?
-  currency         String         @default("USD")
-  mode             PaymentLinkMode
+  name        String
+  description String?
+  currency    String          @default("USD")
+  mode        PaymentLinkMode
 
   // Only used when mode=FIXED; store as cents to avoid float drift
   fixedAmountCents Int?
 
-  isActive         Boolean        @default(true)
+  isActive Boolean @default(true)
 
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  payments         Payment[]
+  payments Payment[]
 
   @@index([merchantId])
-  @@index([merchantId, environment]) // ✅ important for fast filtering
+  @@index([merchantId, environment])
   @@index([isActive])
 }
 
 model Payment {
-  id               String        @id @default(cuid())
+  id String @id @default(cuid())
 
-  linkId           String
-  link             PaymentLink   @relation(fields: [linkId], references: [id], onDelete: Cascade)
+  linkId String
+  link   PaymentLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
 
   // Money-safe storage
   amountUsdCents   Int
-  amountUsdcMicros BigInt        // 6 decimals (USDC)
+  amountUsdcMicros BigInt // 6 decimals (USDC)
 
-  payerAddress     String?
+  payerAddress String?
 
   // Base mainnet default
-  chainId          Int           @default(8453)
+  chainId Int @default(8453)
 
-  tokenAddress     String
+  tokenAddress String
 
   // Unique once a tx exists
-  txHash           String?       @unique
+  txHash String? @unique
 
-  status           PaymentStatus @default(CREATED)
+  status PaymentStatus @default(CREATED)
 
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-  confirmedAt      DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  confirmedAt DateTime?
 
   @@index([linkId, createdAt])
   @@index([status])
+}
+
+//
+// =====================
+// V2: Developer Platform
+// (Additive — does not affect V1)
+// =====================
+//
+
+enum ApiKeyType {
+  SECRET
+  PUBLISHABLE
+}
+
+enum ApiKeyStatus {
+  ACTIVE
+  REVOKED
+}
+
+model ApiKey {
+  id String @id @default(cuid())
+
+  merchantId String
+  merchant   Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  environment DashboardMode @default(TEST)
+  type        ApiKeyType
+
+  name   String?
+  status ApiKeyStatus @default(ACTIVE)
+
+  // Store only hash (never store plaintext key)
+  keyHash String @unique
+
+  // For display/debug (non-sensitive)
+  prefix String // e.g. "byund_sk_live" / "byund_pk_test"
+  last4  String
+
+  // optional for later (fine empty for V2 initial)
+  scopes String[] @default([])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  revokedAt DateTime?
+
+  @@index([merchantId, environment])
+  @@index([merchantId, type])
+  @@index([prefix])
+  @@index([status])
+}
+
+enum WebhookEventType {
+  payment_created
+  payment_submitted
+  payment_confirmed
+  payment_failed
+  payment_canceled
+}
+
+enum WebhookDeliveryStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+model WebhookEndpoint {
+  id String @id @default(cuid())
+
+  merchantId String
+  merchant   Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  environment DashboardMode @default(TEST)
+
+  url         String
+  description String?
+
+  // Store only hash; reveal raw only once at creation time
+  signingSecretHash  String
+  signingSecretLast4 String
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Join-table for subscribed events (most reliable across tooling)
+  events     WebhookEndpointEvent[]
+  deliveries WebhookDelivery[]
+
+  @@index([merchantId, environment])
+  @@index([isActive])
+}
+
+model WebhookEndpointEvent {
+  endpointId String
+  endpoint   WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+
+  eventType WebhookEventType
+
+  createdAt DateTime @default(now())
+
+  @@id([endpointId, eventType])
+  @@index([eventType])
+}
+
+model WebhookDelivery {
+  id String @id @default(cuid())
+
+  endpointId String
+  endpoint   WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+
+  eventType WebhookEventType
+  eventId   String // idempotency per endpoint
+
+  payload Json
+
+  status       WebhookDeliveryStatus @default(PENDING)
+  attemptCount Int                   @default(0)
+
+  lastAttemptAt DateTime?
+  nextAttemptAt DateTime?
+
+  httpStatus   Int?
+  responseBody String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([endpointId, eventId])
+  @@index([endpointId, createdAt])
+  @@index([status, nextAttemptAt])
 }

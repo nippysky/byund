@@ -12,9 +12,10 @@ export type CurrentUser = {
     publicName: string;
     settlementWallet: string | null;
     dashboardMode: "TEST" | "LIVE";
-    brandLeftBg: string;
-    brandLeftFg: string;
-    brandAccent: string;
+
+    // ✅ Branding (V1 simplified)
+    brandBg: string;
+    brandText: string;
   } | null;
 };
 
@@ -39,9 +40,10 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
               publicName: true,
               settlementWallet: true,
               dashboardMode: true,
-              brandLeftBg: true,
-              brandLeftFg: true,
-              brandAccent: true,
+
+              // ✅ new fields
+              brandBg: true,
+              brandText: true,
             },
           },
         },
