@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,32 +17,22 @@ function getPasswordRequirements(password: string) {
   const hasNumber = /[0-9]/.test(password);
   const hasSpecial = /[^A-Za-z0-9]/.test(password);
 
-  return {
-    hasMinLength,
-    hasLower,
-    hasUpper,
-    hasNumber,
-    hasSpecial,
-  };
+  return { hasMinLength, hasLower, hasUpper, hasNumber, hasSpecial };
 }
 
-// Zod schema with enforced complexity
 const registerSchema = z.object({
-  name: z.string().min(1, "Enter a name."),
-  email: z.string().email("Enter a valid email address."),
+  name: z.string().min(1, "Enter a name.").max(80, "Name is too long."),
+  email: z.string().email("Enter a valid email address.").transform((s) => s.toLowerCase().trim()),
   password: z
     .string()
-    .min(
-      MIN_PASSWORD_LENGTH,
-      `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`
-    )
+    .min(MIN_PASSWORD_LENGTH, `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`)
+    .max(200, "Password is too long.")
     .superRefine((val, ctx) => {
       const req = getPasswordRequirements(val);
       if (!req.hasLower || !req.hasUpper || !req.hasNumber || !req.hasSpecial) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message:
-            "Password must include uppercase, lowercase, a number, and a special character.",
+          message: "Password must include uppercase, lowercase, a number, and a special character.",
         });
       }
     }),
@@ -49,7 +40,6 @@ const registerSchema = z.object({
 
 type RegisterValues = z.infer<typeof registerSchema>;
 
-// Password strength score: 0–3 based on requirements
 function getPasswordScore(password: string): number {
   if (!password) return 0;
 
@@ -76,26 +66,17 @@ function getPasswordColor(score: number): string {
   return "text-[#16a34a]";
 }
 
-function getSegmentClass(
-  index: number,
-  score: number,
-  hasValue: boolean
-): string {
+function getSegmentClass(index: number, score: number, hasValue: boolean): string {
   if (!hasValue) return "flex-1 h-1 rounded-full bg-border";
 
   if (score <= 1) {
-    return index === 0
-      ? "flex-1 h-1 rounded-full bg-[#ef4444]"
-      : "flex-1 h-1 rounded-full bg-border";
+    return index === 0 ? "flex-1 h-1 rounded-full bg-[#ef4444]" : "flex-1 h-1 rounded-full bg-border";
   }
 
   if (score === 2) {
-    return index <= 1
-      ? "flex-1 h-1 rounded-full bg-[#f97316]"
-      : "flex-1 h-1 rounded-full bg-border";
+    return index <= 1 ? "flex-1 h-1 rounded-full bg-[#f97316]" : "flex-1 h-1 rounded-full bg-border";
   }
 
-  // score === 3
   return "flex-1 h-1 rounded-full bg-[#16a34a]";
 }
 
@@ -107,27 +88,35 @@ function generateStrongPassword(length = 14): string {
 
   const all = lowercase + uppercase + numbers + specials;
 
-  // Ensure at least one of each type
   let password = "";
   password += lowercase[Math.floor(Math.random() * lowercase.length)];
   password += uppercase[Math.floor(Math.random() * uppercase.length)];
   password += numbers[Math.floor(Math.random() * numbers.length)];
   password += specials[Math.floor(Math.random() * specials.length)];
 
-  // Fill the rest
   for (let i = password.length; i < length; i++) {
     password += all[Math.floor(Math.random() * all.length)];
   }
 
-  // Simple shuffle
   return password
     .split("")
     .sort(() => Math.random() - 0.5)
     .join("");
 }
 
+function safeNextPath(raw: string | null) {
+  if (!raw) return "/dashboard";
+  if (!raw.startsWith("/")) return "/dashboard";
+  if (raw.startsWith("//")) return "/dashboard";
+  return raw;
+}
+
 export function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
+
+  const searchParams = useSearchParams();
+  const nextPath = useMemo(() => safeNextPath(searchParams.get("next")), [searchParams]);
 
   const {
     register,
@@ -137,11 +126,7 @@ export function RegisterForm() {
     formState: { errors, isSubmitting },
   } = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-      password: "",
-    },
+    defaultValues: { name: "", email: "", password: "" },
   });
 
   // eslint-disable-next-line react-hooks/incompatible-library
@@ -153,35 +138,46 @@ export function RegisterForm() {
 
   const baseInput =
     "block w-full rounded-md border bg-white px-3 py-2 text-sm outline-none ring-0 transition-colors";
-  const normalInput =
-    baseInput +
-    " border-border focus:border-accent focus:ring-1 focus:ring-accent";
+  const normalInput = baseInput + " border-border focus:border-accent focus:ring-1 focus:ring-accent";
   const errorInput =
-    baseInput +
-    " border-[#ef4444] focus:border-[#ef4444] focus:ring-1 focus:ring-[#ef4444]";
+    baseInput + " border-[#ef4444] focus:border-[#ef4444] focus:ring-1 focus:ring-[#ef4444]";
 
   async function onSubmit(values: RegisterValues) {
-    // TODO: wire to server action / API route
-    console.log("Register values", values);
+    setServerError(null);
+
+    const res = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify(values),
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setServerError(data?.error ?? "Registration failed. Please try again.");
+      return;
+    }
+
+    window.location.assign(nextPath);
   }
 
   function handleGeneratePassword() {
     const generated = generateStrongPassword(14);
     setShowPassword(true);
-    setValue("password", generated, {
-      shouldValidate: true,
-      shouldDirty: true,
-    });
+    setValue("password", generated, { shouldValidate: true, shouldDirty: true });
   }
 
   return (
     <form className="mt-6 space-y-4" onSubmit={handleSubmit(onSubmit)} noValidate>
+      {serverError && (
+        <div className="rounded-xl border border-[#fecaca] bg-[#fef2f2] px-3 py-2 text-xs text-[#991b1b]">
+          {serverError}
+        </div>
+      )}
+
       {/* Name */}
       <div className="space-y-1.5">
-        <label
-          htmlFor="name"
-          className="text-sm font-medium text-foreground"
-        >
+        <label htmlFor="name" className="text-sm font-medium text-foreground">
           Name
         </label>
         <input
@@ -192,17 +188,12 @@ export function RegisterForm() {
           className={errors.name ? errorInput : normalInput}
           placeholder="NIPPY Studio, Sam'Alia, Chinedu Okafor…"
         />
-        {errors.name && (
-          <p className="text-xs text-[#ef4444]">{errors.name.message}</p>
-        )}
+        {errors.name && <p className="text-xs text-[#ef4444]">{errors.name.message}</p>}
       </div>
 
       {/* Email */}
       <div className="space-y-1.5">
-        <label
-          htmlFor="email"
-          className="text-sm font-medium text-foreground"
-        >
+        <label htmlFor="email" className="text-sm font-medium text-foreground">
           Email address
         </label>
         <input
@@ -213,36 +204,23 @@ export function RegisterForm() {
           className={errors.email ? errorInput : normalInput}
           placeholder="you@example.com"
         />
-        {errors.email && (
-          <p className="text-xs text-[#ef4444]">{errors.email.message}</p>
-        )}
+        {errors.email && <p className="text-xs text-[#ef4444]">{errors.email.message}</p>}
       </div>
 
       {/* Password */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between gap-3">
           <div className="flex flex-col">
-            <label
-              htmlFor="password"
-              className="text-sm font-medium text-foreground"
-            >
+            <label htmlFor="password" className="text-sm font-medium text-foreground">
               Password
             </label>
             {hasPasswordValue && (
-              <span
-                className={`text-xs font-medium ${getPasswordColor(
-                  passwordScore
-                )}`}
-              >
+              <span className={`text-xs font-medium ${getPasswordColor(passwordScore)}`}>
                 {passwordLabel}
               </span>
             )}
           </div>
-          <button
-            type="button"
-            onClick={handleGeneratePassword}
-            className="text-action text-[11px]"
-          >
+          <button type="button" onClick={handleGeneratePassword} className="text-action text-[11px]">
             Generate strong password
           </button>
         </div>
@@ -262,14 +240,7 @@ export function RegisterForm() {
             className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted hover:text-foreground focus:outline-none"
             aria-label={showPassword ? "Hide password" : "Show password"}
           >
-            <svg
-              aria-hidden="true"
-              className="h-4 w-4"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.75"
-            >
+            <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
               <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7Z" />
               <circle cx="12" cy="12" r="3" />
             </svg>
@@ -279,71 +250,38 @@ export function RegisterForm() {
         {/* Strength bar */}
         <div className="mt-2 flex gap-1">
           {[0, 1, 2].map((index) => (
-            <div
-              key={index}
-              className={getSegmentClass(
-                index,
-                passwordScore,
-                hasPasswordValue
-              )}
-            />
+            <div key={index} className={getSegmentClass(index, passwordScore, hasPasswordValue)} />
           ))}
         </div>
 
         {/* Requirements checklist */}
         <ul className="mt-2 space-y-1 text-[11px] text-muted">
           <li className="flex items-center gap-2">
-            <span
-              className={
-                requirements.hasMinLength
-                  ? "h-1.5 w-1.5 rounded-full bg-[#16a34a]"
-                  : "h-1.5 w-1.5 rounded-full bg-border"
-              }
-            />
+            <span className={requirements.hasMinLength ? "h-1.5 w-1.5 rounded-full bg-[#16a34a]" : "h-1.5 w-1.5 rounded-full bg-border"} />
             <span>At least {MIN_PASSWORD_LENGTH} characters</span>
           </li>
           <li className="flex items-center gap-2">
-            <span
-              className={
-                requirements.hasLower && requirements.hasUpper
-                  ? "h-1.5 w-1.5 rounded-full bg-[#16a34a]"
-                  : "h-1.5 w-1.5 rounded-full bg-border"
-              }
-            />
+            <span className={requirements.hasLower && requirements.hasUpper ? "h-1.5 w-1.5 rounded-full bg-[#16a34a]" : "h-1.5 w-1.5 rounded-full bg-border"} />
             <span>Uppercase and lowercase letters</span>
           </li>
           <li className="flex items-center gap-2">
-            <span
-              className={
-                requirements.hasNumber && requirements.hasSpecial
-                  ? "h-1.5 w-1.5 rounded-full bg-[#16a34a]"
-                  : "h-1.5 w-1.5 rounded-full bg-border"
-              }
-            />
+            <span className={requirements.hasNumber && requirements.hasSpecial ? "h-1.5 w-1.5 rounded-full bg-[#16a34a]" : "h-1.5 w-1.5 rounded-full bg-border"} />
             <span>A number and a special character</span>
           </li>
         </ul>
 
-        {errors.password && (
-          <p className="mt-2 text-xs text-[#ef4444]">
-            {errors.password.message}
-          </p>
-        )}
+        {errors.password && <p className="mt-2 text-xs text-[#ef4444]">{errors.password.message}</p>}
       </div>
 
       <div className="pt-2">
-        <Button
-          type="submit"
-          className="w-full justify-center"
-          disabled={isSubmitting}
-        >
+        <Button type="submit" className="w-full justify-center" disabled={isSubmitting}>
           {isSubmitting ? "Creating account…" : "Create account"}
         </Button>
       </div>
 
       <p className="mt-4 text-xs text-muted">
         Already on BYUND?{" "}
-        <Link href="/signin" className="text-action">
+        <Link href={`/signin?next=${encodeURIComponent(nextPath)}`} className="text-action">
           Sign in instead
         </Link>
         .

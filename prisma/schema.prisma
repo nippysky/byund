@@ -1,0 +1,143 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum DashboardMode {
+  TEST
+  LIVE
+}
+
+enum PaymentLinkMode {
+  FIXED
+  VARIABLE
+}
+
+enum PaymentStatus {
+  CREATED
+  SUBMITTED
+  CONFIRMED
+  FAILED
+  CANCELED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  merchant     Merchant?
+  sessions     Session[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+
+  // Store ONLY the hash of the session token.
+  // If the DB is leaked, attackers still can't replay sessions.
+  tokenHash String   @unique
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Merchant {
+  id               String        @id @default(cuid())
+
+  userId           String        @unique
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  publicName       String
+
+  // Allow signup without forcing wallet config.
+  settlementWallet String?
+
+  // Dashboard mode stored in DB (not localStorage)
+  dashboardMode    DashboardMode @default(TEST)
+
+  // Checkout branding defaults
+  brandLeftBg      String        @default("#EAF2FF")
+  brandLeftFg      String        @default("#0B1220")
+  brandAccent      String        @default("#1E6BFF")
+
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  links            PaymentLink[]
+}
+
+model PaymentLink {
+  id              String         @id @default(cuid())
+
+  // Stable public identifier used in URLs: /pay/[publicId]
+  publicId         String        @unique
+
+  merchantId       String
+  merchant         Merchant       @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  // ✅ Add this:
+  environment      DashboardMode  @default(TEST)
+
+  name             String
+  description      String?
+  currency         String         @default("USD")
+  mode             PaymentLinkMode
+
+  // Only used when mode=FIXED; store as cents to avoid float drift
+  fixedAmountCents Int?
+
+  isActive         Boolean        @default(true)
+
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  payments         Payment[]
+
+  @@index([merchantId])
+  @@index([merchantId, environment]) // ✅ important for fast filtering
+  @@index([isActive])
+}
+
+model Payment {
+  id               String        @id @default(cuid())
+
+  linkId           String
+  link             PaymentLink   @relation(fields: [linkId], references: [id], onDelete: Cascade)
+
+  // Money-safe storage
+  amountUsdCents   Int
+  amountUsdcMicros BigInt        // 6 decimals (USDC)
+
+  payerAddress     String?
+
+  // Base mainnet default
+  chainId          Int           @default(8453)
+
+  tokenAddress     String
+
+  // Unique once a tx exists
+  txHash           String?       @unique
+
+  status           PaymentStatus @default(CREATED)
+
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  confirmedAt      DateTime?
+
+  @@index([linkId, createdAt])
+  @@index([status])
+}

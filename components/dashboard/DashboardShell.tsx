@@ -2,87 +2,158 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
+import { ToastProvider, useToast } from "@/components/ui/Toast";
 
-type Mode = "test" | "live";
+type Mode = "TEST" | "LIVE";
 
-const STORAGE_KEY = "byund-dashboard-mode";
+type DashboardContextValue = {
+  mode: Mode;
+  isModeHydrated: boolean;
+  setMode: (next: Mode) => Promise<void>;
+  profile: { name: string; email: string } | null;
+  logout: () => Promise<void>;
+  refresh: () => Promise<void>;
+};
 
-export default function DashboardShell({ children }: { children: ReactNode }) {
-  // Stable default for SSR + first client render
-  const [mode, setMode] = useState<Mode>("test");
+const DashboardContext = createContext<DashboardContextValue | null>(null);
 
-  const [toast, setToast] = useState<{ id: number; message: string } | null>(
-    null
-  );
+export function useDashboard() {
+  const ctx = useContext(DashboardContext);
+  if (!ctx) throw new Error("useDashboard must be used within <DashboardShell>");
+  return ctx;
+}
 
-  // Sync from localStorage AFTER hydration
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (stored === "live" || stored === "test") {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setMode(stored);
+function ShellInner({ children }: { children: ReactNode }) {
+  const { toast } = useToast();
+
+  const [mode, setModeState] = useState<Mode>("TEST");
+  const [isModeHydrated, setIsModeHydrated] = useState(false);
+
+  const [profile, setProfile] = useState<{ name: string; email: string } | null>(null);
+
+  const refresh = useCallback(async () => {
+    try {
+      const res = await fetch("/api/dashboard/context", {
+        method: "GET",
+        credentials: "same-origin",
+        headers: { Accept: "application/json" },
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.ok) throw new Error("Failed");
+
+      const nextMode: Mode = data.mode === "LIVE" ? "LIVE" : "TEST";
+      setModeState(nextMode);
+
+      if (data.profile?.email) {
+        setProfile({
+          name: String(data.profile.name ?? "Merchant"),
+          email: String(data.profile.email),
+        });
+      } else {
+        setProfile(null);
+      }
+    } catch {
+      // soft-fail: server guards still protect pages
+    } finally {
+      setIsModeHydrated(true);
     }
   }, []);
 
-  function showToast(message: string) {
-    const id = Date.now();
-    setToast({ id, message });
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
-    // Auto-dismiss after 3.5s
-    window.setTimeout(() => {
-      setToast((current) => (current && current.id === id ? null : current));
-    }, 3500);
-  }
+  const setMode = useCallback(
+    async (next: Mode) => {
+      if (next === mode) return;
 
-  function handleModeChange(next: Mode) {
-    if (next === mode) return;
+      const prev = mode;
+      setModeState(next);
 
-    setMode(next);
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(STORAGE_KEY, next);
+      toast({
+        title: "Mode updated",
+        variant: next === "LIVE" ? "warning" : "default",
+        message:
+          next === "TEST"
+            ? "Test mode: payments won’t move real funds."
+            : "Live mode: payments will settle to your wallet.",
+      });
+
+      try {
+        const res = await fetch("/api/dashboard/mode", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mode: next }),
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data?.ok) throw new Error(data?.error ?? "Failed");
+
+        setModeState(data.mode === "LIVE" ? "LIVE" : "TEST");
+      } catch {
+        setModeState(prev);
+        toast({
+          title: "Couldn’t update mode",
+          variant: "error",
+          message: "Please try again. If this keeps happening, check your connection.",
+        });
+      }
+    },
+    [mode, toast]
+  );
+
+  const logout = useCallback(async () => {
+    try {
+      const res = await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!res.ok) throw new Error("Logout failed");
+      window.location.assign("/signin");
+    } catch {
+      toast({
+        title: "Logout failed",
+        variant: "error",
+        message: "Try again.",
+      });
     }
+  }, [toast]);
 
-    showToast(
-      next === "test"
-        ? "You are now in Test mode. Payments here will not move real funds."
-        : "You are now in Live mode. Real funds will settle to your wallet."
-    );
-
-    // Later, when the server actually uses mode for queries,
-    // we can add `router.refresh()` here to refetch server data.
-  }
+  const value = useMemo<DashboardContextValue>(
+    () => ({ mode, isModeHydrated, setMode, profile, logout, refresh }),
+    [mode, isModeHydrated, setMode, profile, logout, refresh]
+  );
 
   return (
-    <div className="min-h-screen bg-surface text-foreground">
-      <div className="flex min-h-screen">
-        {/* Sidebar (desktop) */}
-        <Sidebar mode={mode} />
+    <DashboardContext.Provider value={value}>
+      <div className="min-h-screen bg-surface text-foreground">
+        <div className="flex min-h-screen">
+          <Sidebar mode={mode === "LIVE" ? "live" : "test"} />
 
-        {/* Main area */}
-        <div className="flex min-h-screen flex-1 flex-col">
-          <Topbar mode={mode} onModeChange={handleModeChange} />
+          <div className="flex min-h-screen flex-1 flex-col">
+            <Topbar />
 
-          <main className="flex-1 px-4 pb-10 pt-4 md:px-6 md:pt-6 lg:px-8">
-            {children}
-          </main>
-        </div>
-
-      {/* Toast – bottom-right */}
-        {toast && (
-          <div className="pointer-events-none fixed inset-x-0 bottom-4 flex justify-end px-4 md:bottom-6 md:px-6 lg:px-8">
-            <div className="pointer-events-auto max-w-sm rounded-2xl border border-border bg-white px-4 py-3 shadow-lg shadow-black/5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">
-                Mode updated
-              </p>
-              <p className="mt-1 text-sm text-foreground">{toast.message}</p>
-            </div>
+            <main className="flex-1 px-4 pb-10 pt-4 md:px-6 md:pt-6 lg:px-8">
+              {children}
+            </main>
           </div>
-        )}
+        </div>
       </div>
-    </div>
+    </DashboardContext.Provider>
+  );
+}
+
+export default function DashboardShell({ children }: { children: ReactNode }) {
+  return (
+    <ToastProvider>
+      <ShellInner>{children}</ShellInner>
+    </ToastProvider>
   );
 }
