@@ -2,8 +2,22 @@
 import Link from "next/link";
 import { SignInForm } from "./SignInForm";
 
+function safeNextPath(raw: unknown) {
+  if (typeof raw !== "string" || !raw) return "/dashboard";
+  if (!raw.startsWith("/")) return "/dashboard";
+  if (raw.startsWith("//")) return "/dashboard";
+  return raw;
+}
 
-export default function SignInPage() {
+export default function SignInPage({
+  searchParams,
+}: {
+  searchParams?: Record<string, string | string[] | undefined>;
+}) {
+  const rawNext = searchParams?.next;
+  const nextValue = Array.isArray(rawNext) ? rawNext[0] : rawNext;
+  const nextPath = safeNextPath(nextValue);
+
   return (
     <div className="min-h-screen bg-surface">
       <div className="mx-auto flex min-h-screen max-w-md flex-col px-6 py-8">
@@ -27,7 +41,7 @@ export default function SignInPage() {
               business and payout details from your dashboard.
             </p>
 
-            <SignInForm />
+            <SignInForm nextPath={nextPath} />
           </div>
 
           {/* Footer text */}

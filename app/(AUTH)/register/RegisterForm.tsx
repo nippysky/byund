@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -22,17 +21,29 @@ function getPasswordRequirements(password: string) {
 
 const registerSchema = z.object({
   name: z.string().min(1, "Enter a name.").max(80, "Name is too long."),
-  email: z.string().email("Enter a valid email address.").transform((s) => s.toLowerCase().trim()),
+  email: z
+    .string()
+    .email("Enter a valid email address.")
+    .transform((s) => s.toLowerCase().trim()),
   password: z
     .string()
-    .min(MIN_PASSWORD_LENGTH, `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`)
+    .min(
+      MIN_PASSWORD_LENGTH,
+      `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`
+    )
     .max(200, "Password is too long.")
     .superRefine((val, ctx) => {
       const req = getPasswordRequirements(val);
-      if (!req.hasLower || !req.hasUpper || !req.hasNumber || !req.hasSpecial) {
+      if (
+        !req.hasLower ||
+        !req.hasUpper ||
+        !req.hasNumber ||
+        !req.hasSpecial
+      ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "Password must include uppercase, lowercase, a number, and a special character.",
+          message:
+            "Password must include uppercase, lowercase, a number, and a special character.",
         });
       }
     }),
@@ -66,15 +77,23 @@ function getPasswordColor(score: number): string {
   return "text-[#16a34a]";
 }
 
-function getSegmentClass(index: number, score: number, hasValue: boolean): string {
+function getSegmentClass(
+  index: number,
+  score: number,
+  hasValue: boolean
+): string {
   if (!hasValue) return "flex-1 h-1 rounded-full bg-border";
 
   if (score <= 1) {
-    return index === 0 ? "flex-1 h-1 rounded-full bg-[#ef4444]" : "flex-1 h-1 rounded-full bg-border";
+    return index === 0
+      ? "flex-1 h-1 rounded-full bg-[#ef4444]"
+      : "flex-1 h-1 rounded-full bg-border";
   }
 
   if (score === 2) {
-    return index <= 1 ? "flex-1 h-1 rounded-full bg-[#f97316]" : "flex-1 h-1 rounded-full bg-border";
+    return index <= 1
+      ? "flex-1 h-1 rounded-full bg-[#f97316]"
+      : "flex-1 h-1 rounded-full bg-border";
   }
 
   return "flex-1 h-1 rounded-full bg-[#16a34a]";
@@ -104,19 +123,18 @@ function generateStrongPassword(length = 14): string {
     .join("");
 }
 
-function safeNextPath(raw: string | null) {
+function safeNextPath(raw: string) {
   if (!raw) return "/dashboard";
   if (!raw.startsWith("/")) return "/dashboard";
   if (raw.startsWith("//")) return "/dashboard";
   return raw;
 }
 
-export function RegisterForm() {
+export function RegisterForm({ nextPath }: { nextPath: string }) {
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
-  const searchParams = useSearchParams();
-  const nextPath = useMemo(() => safeNextPath(searchParams.get("next")), [searchParams]);
+  const safeNext = useMemo(() => safeNextPath(nextPath), [nextPath]);
 
   const {
     register,
@@ -138,9 +156,11 @@ export function RegisterForm() {
 
   const baseInput =
     "block w-full rounded-md border bg-white px-3 py-2 text-sm outline-none ring-0 transition-colors";
-  const normalInput = baseInput + " border-border focus:border-accent focus:ring-1 focus:ring-accent";
+  const normalInput =
+    baseInput + " border-border focus:border-accent focus:ring-1 focus:ring-accent";
   const errorInput =
-    baseInput + " border-[#ef4444] focus:border-[#ef4444] focus:ring-1 focus:ring-[#ef4444]";
+    baseInput +
+    " border-[#ef4444] focus:border-[#ef4444] focus:ring-1 focus:ring-[#ef4444]";
 
   async function onSubmit(values: RegisterValues) {
     setServerError(null);
@@ -158,7 +178,7 @@ export function RegisterForm() {
       return;
     }
 
-    window.location.assign(nextPath);
+    window.location.assign(safeNext);
   }
 
   function handleGeneratePassword() {
@@ -240,7 +260,14 @@ export function RegisterForm() {
             className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted hover:text-foreground focus:outline-none"
             aria-label={showPassword ? "Hide password" : "Show password"}
           >
-            <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+            <svg
+              aria-hidden="true"
+              className="h-4 w-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.75"
+            >
               <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7Z" />
               <circle cx="12" cy="12" r="3" />
             </svg>
@@ -257,15 +284,33 @@ export function RegisterForm() {
         {/* Requirements checklist */}
         <ul className="mt-2 space-y-1 text-[11px] text-muted">
           <li className="flex items-center gap-2">
-            <span className={requirements.hasMinLength ? "h-1.5 w-1.5 rounded-full bg-[#16a34a]" : "h-1.5 w-1.5 rounded-full bg-border"} />
+            <span
+              className={
+                requirements.hasMinLength
+                  ? "h-1.5 w-1.5 rounded-full bg-[#16a34a]"
+                  : "h-1.5 w-1.5 rounded-full bg-border"
+              }
+            />
             <span>At least {MIN_PASSWORD_LENGTH} characters</span>
           </li>
           <li className="flex items-center gap-2">
-            <span className={requirements.hasLower && requirements.hasUpper ? "h-1.5 w-1.5 rounded-full bg-[#16a34a]" : "h-1.5 w-1.5 rounded-full bg-border"} />
+            <span
+              className={
+                requirements.hasLower && requirements.hasUpper
+                  ? "h-1.5 w-1.5 rounded-full bg-[#16a34a]"
+                  : "h-1.5 w-1.5 rounded-full bg-border"
+              }
+            />
             <span>Uppercase and lowercase letters</span>
           </li>
           <li className="flex items-center gap-2">
-            <span className={requirements.hasNumber && requirements.hasSpecial ? "h-1.5 w-1.5 rounded-full bg-[#16a34a]" : "h-1.5 w-1.5 rounded-full bg-border"} />
+            <span
+              className={
+                requirements.hasNumber && requirements.hasSpecial
+                  ? "h-1.5 w-1.5 rounded-full bg-[#16a34a]"
+                  : "h-1.5 w-1.5 rounded-full bg-border"
+              }
+            />
             <span>A number and a special character</span>
           </li>
         </ul>
@@ -281,7 +326,7 @@ export function RegisterForm() {
 
       <p className="mt-4 text-xs text-muted">
         Already on BYUND?{" "}
-        <Link href={`/signin?next=${encodeURIComponent(nextPath)}`} className="text-action">
+        <Link href={`/signin?next=${encodeURIComponent(safeNext)}`} className="text-action">
           Sign in instead
         </Link>
         .
