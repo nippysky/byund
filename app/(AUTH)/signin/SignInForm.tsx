@@ -8,10 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/Button";
 
 const signInSchema = z.object({
-  email: z
-    .string()
-    .min(1, "Enter a valid email address.")
-    .email("Enter a valid email address."),
+  email: z.string().min(1, "Enter a valid email address.").email("Enter a valid email address."),
   password: z.string().min(1, "Enter your password."),
 });
 
@@ -41,11 +38,9 @@ export function SignInForm({ nextPath }: { nextPath: string }) {
 
   const baseInput =
     "block w-full rounded-md border bg-white px-3 py-2 text-sm outline-none ring-0 transition-colors";
-  const normalInput =
-    baseInput + " border-border focus:border-accent focus:ring-1 focus:ring-accent";
+  const normalInput = baseInput + " border-border focus:border-accent focus:ring-1 focus:ring-accent";
   const errorInput =
-    baseInput +
-    " border-[#ef4444] focus:border-[#ef4444] focus:ring-1 focus:ring-[#ef4444]";
+    baseInput + " border-[#ef4444] focus:border-[#ef4444] focus:ring-1 focus:ring-[#ef4444]";
 
   async function onSubmit(values: SignInValues) {
     setServerError(null);
@@ -57,29 +52,30 @@ export function SignInForm({ nextPath }: { nextPath: string }) {
       body: JSON.stringify(values),
     });
 
-    const data = await res.json().catch(() => ({}));
+    const data: { ok?: boolean; error?: string; onboardingRequired?: boolean } = await res
+      .json()
+      .catch(() => ({}));
 
-    if (!res.ok) {
+    if (!res.ok || !data?.ok) {
       setServerError(data?.error ?? "Sign in failed. Try again.");
       return;
     }
 
-    window.location.assign(safeNext);
+    const go = data.onboardingRequired
+      ? `/onboarding?next=${encodeURIComponent(safeNext)}`
+      : safeNext;
+
+    window.location.assign(go);
   }
 
   return (
-    <form
-      className="mt-6 space-y-4"
-      onSubmit={handleSubmit(onSubmit)}
-      noValidate
-    >
+    <form className="mt-6 space-y-4" onSubmit={handleSubmit(onSubmit)} noValidate>
       {serverError && (
         <div className="rounded-xl border border-[#fecaca] bg-[#fef2f2] px-3 py-2 text-xs text-[#991b1b]">
           {serverError}
         </div>
       )}
 
-      {/* Email */}
       <div className="space-y-1.5">
         <label htmlFor="email" className="text-sm font-medium text-foreground">
           Email
@@ -92,18 +88,12 @@ export function SignInForm({ nextPath }: { nextPath: string }) {
           className={errors.email ? errorInput : normalInput}
           placeholder="you@example.com"
         />
-        {errors.email && (
-          <p className="text-xs text-[#ef4444]">{errors.email.message}</p>
-        )}
+        {errors.email && <p className="text-xs text-[#ef4444]">{errors.email.message}</p>}
       </div>
 
-      {/* Password */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
-          <label
-            htmlFor="password"
-            className="text-sm font-medium text-foreground"
-          >
+          <label htmlFor="password" className="text-sm font-medium text-foreground">
             Password
           </label>
           <Link href="#" className="text-action text-xs">
@@ -140,17 +130,11 @@ export function SignInForm({ nextPath }: { nextPath: string }) {
           </button>
         </div>
 
-        {errors.password && (
-          <p className="text-xs text-[#ef4444]">{errors.password.message}</p>
-        )}
+        {errors.password && <p className="text-xs text-[#ef4444]">{errors.password.message}</p>}
       </div>
 
       <div className="pt-2">
-        <Button
-          type="submit"
-          className="w-full justify-center"
-          disabled={isSubmitting}
-        >
+        <Button type="submit" className="w-full justify-center" disabled={isSubmitting}>
           {isSubmitting ? "Signing in…" : "Sign in"}
         </Button>
       </div>

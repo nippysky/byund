@@ -2,13 +2,13 @@
   "name": "byund",
   "version": "0.1.0",
   "private": true,
-"scripts": {
-  "dev": "next dev",
-  "build": "next build",
-  "start": "next start",
-  "lint": "eslint",
-  "postinstall": "prisma generate"
-},
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "postinstall": "prisma generate"
+  },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
     "@prisma/adapter-pg": "^7.2.0",
@@ -26,6 +26,7 @@
     "react-dom": "19.2.0",
     "react-hook-form": "^7.68.0",
     "tailwind-merge": "^3.4.0",
+    "viem": "^2.43.2",
     "zod": "^4.2.1"
   },
   "devDependencies": {

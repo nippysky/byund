@@ -4,7 +4,6 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import PayPageClient from "@/components/shared/PayPageClient";
 
-
 export type PayPageLink = {
   publicId: string;
 
@@ -16,9 +15,11 @@ export type PayPageLink = {
   mode: "fixed" | "variable";
   fixedAmountCents: number | null;
 
-  // ✅ Branding (V1 simplified)
   brandBg: string;
   brandText: string;
+
+  // ✅ new
+  isActive: boolean;
 };
 
 async function getLink(publicId: string) {
@@ -51,9 +52,14 @@ export async function generateMetadata({
   const { id: publicId } = await params;
   const link = await getLink(publicId);
 
-  if (!link || !link.isActive) {
+  if (!link) {
+    return { title: "Checkout • BYUND", robots: { index: false, follow: false } };
+  }
+
+  // ✅ Inactive: keep it unindexed, but show a real page
+  if (!link.isActive) {
     return {
-      title: "Checkout • BYUND",
+      title: "Link unavailable • BYUND",
       robots: { index: false, follow: false },
     };
   }
@@ -63,14 +69,9 @@ export async function generateMetadata({
 
   const title = `Pay ${merchant} • ${paymentName}`;
   const description =
-    link.description?.slice(0, 155) ||
-    `Complete a secure checkout to ${merchant}.`;
+    link.description?.slice(0, 155) || `Complete a secure checkout to ${merchant}.`;
 
-  return {
-    title,
-    description,
-    openGraph: { title, description },
-  };
+  return { title, description, openGraph: { title, description } };
 }
 
 export default async function PayPage({
@@ -81,7 +82,7 @@ export default async function PayPage({
   const { id: publicId } = await params;
 
   const link = await getLink(publicId);
-  if (!link || !link.isActive) return notFound();
+  if (!link) return notFound();
 
   const payload: PayPageLink = {
     publicId: link.publicId,
@@ -93,6 +94,7 @@ export default async function PayPage({
     fixedAmountCents: link.fixedAmountCents ?? null,
     brandBg: link.merchant.brandBg,
     brandText: link.merchant.brandText,
+    isActive: Boolean(link.isActive),
   };
 
   return <PayPageClient link={payload} currentYear={new Date().getFullYear()} />;

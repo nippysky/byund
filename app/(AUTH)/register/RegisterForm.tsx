@@ -27,23 +27,14 @@ const registerSchema = z.object({
     .transform((s) => s.toLowerCase().trim()),
   password: z
     .string()
-    .min(
-      MIN_PASSWORD_LENGTH,
-      `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`
-    )
+    .min(MIN_PASSWORD_LENGTH, `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`)
     .max(200, "Password is too long.")
     .superRefine((val, ctx) => {
       const req = getPasswordRequirements(val);
-      if (
-        !req.hasLower ||
-        !req.hasUpper ||
-        !req.hasNumber ||
-        !req.hasSpecial
-      ) {
+      if (!req.hasLower || !req.hasUpper || !req.hasNumber || !req.hasSpecial) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message:
-            "Password must include uppercase, lowercase, a number, and a special character.",
+          message: "Password must include uppercase, lowercase, a number, and a special character.",
         });
       }
     }),
@@ -77,23 +68,15 @@ function getPasswordColor(score: number): string {
   return "text-[#16a34a]";
 }
 
-function getSegmentClass(
-  index: number,
-  score: number,
-  hasValue: boolean
-): string {
+function getSegmentClass(index: number, score: number, hasValue: boolean): string {
   if (!hasValue) return "flex-1 h-1 rounded-full bg-border";
 
   if (score <= 1) {
-    return index === 0
-      ? "flex-1 h-1 rounded-full bg-[#ef4444]"
-      : "flex-1 h-1 rounded-full bg-border";
+    return index === 0 ? "flex-1 h-1 rounded-full bg-[#ef4444]" : "flex-1 h-1 rounded-full bg-border";
   }
 
   if (score === 2) {
-    return index <= 1
-      ? "flex-1 h-1 rounded-full bg-[#f97316]"
-      : "flex-1 h-1 rounded-full bg-border";
+    return index <= 1 ? "flex-1 h-1 rounded-full bg-[#f97316]" : "flex-1 h-1 rounded-full bg-border";
   }
 
   return "flex-1 h-1 rounded-full bg-[#16a34a]";
@@ -156,11 +139,9 @@ export function RegisterForm({ nextPath }: { nextPath: string }) {
 
   const baseInput =
     "block w-full rounded-md border bg-white px-3 py-2 text-sm outline-none ring-0 transition-colors";
-  const normalInput =
-    baseInput + " border-border focus:border-accent focus:ring-1 focus:ring-accent";
+  const normalInput = baseInput + " border-border focus:border-accent focus:ring-1 focus:ring-accent";
   const errorInput =
-    baseInput +
-    " border-[#ef4444] focus:border-[#ef4444] focus:ring-1 focus:ring-[#ef4444]";
+    baseInput + " border-[#ef4444] focus:border-[#ef4444] focus:ring-1 focus:ring-[#ef4444]";
 
   async function onSubmit(values: RegisterValues) {
     setServerError(null);
@@ -178,7 +159,8 @@ export function RegisterForm({ nextPath }: { nextPath: string }) {
       return;
     }
 
-    window.location.assign(safeNext);
+    // ✅ Always send new merchants into onboarding first
+    window.location.assign(`/onboarding?next=${encodeURIComponent(safeNext)}`);
   }
 
   function handleGeneratePassword() {

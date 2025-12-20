@@ -1,4 +1,4 @@
-// app/pay/[id]/PayPageClient.tsx
+// components/shared/PayPageClient.tsx
 "use client";
 
 import { useMemo, useState } from "react";
@@ -16,9 +16,11 @@ export type PayPageLink = {
   mode: "fixed" | "variable";
   fixedAmountCents: number | null;
 
-  // ✅ Branding (V1 simplified)
   brandBg: string;
   brandText: string;
+
+  // ✅ so we can show a branded "unavailable" state instead of 404
+  isActive: boolean;
 };
 
 type Props = {
@@ -26,7 +28,16 @@ type Props = {
   currentYear: number;
 };
 
-const MAX_USD_CENTS = 10_000_000_00; // $10,000,000.00
+const MAX_USD_CENTS = 10_000_000_00;
+
+// ✅ BYUND defaults
+const BYUND_BLUE = "#0066ff";
+const BYUND_WHITE = "#ffffff";
+
+function isHexColor(s: unknown): s is string {
+  if (typeof s !== "string") return false;
+  return /^#([0-9a-fA-F]{6})$/.test(s.trim());
+}
 
 function normalizeMoneyInput(raw: string): string {
   let cleaned = raw.replace(/[^\d.]/g, "");
@@ -50,10 +61,7 @@ function normalizeMoneyInput(raw: string): string {
 
 function usdCentsToPretty(cents: number) {
   const n = cents / 100;
-  return n.toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function safeUsdToCents(input: string): { cents: number | null; reason?: string } {
@@ -76,25 +84,61 @@ function safeUsdToCents(input: string): { cents: number | null; reason?: string 
   return { cents: Math.round(total) };
 }
 
-/** Pick readable text for colored buttons */
-function readableTextOn(bgHex: string): "#ffffff" | "#0b1220" {
-  // expects #RRGGBB
-  const hex = bgHex.replace("#", "");
-  if (hex.length !== 6) return "#ffffff";
-  const r = parseInt(hex.slice(0, 2), 16);
-  const g = parseInt(hex.slice(2, 4), 16);
-  const b = parseInt(hex.slice(4, 6), 16);
+function hexToRgb(hex: string) {
+  const h = hex.replace("#", "");
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return { r, g, b };
+}
 
-  // perceived luminance
-  const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+function luminance(hex: string) {
+  const { r, g, b } = hexToRgb(hex);
+  const srgb = [r, g, b].map((v) => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * srgb[0] + 0.7152 * srgb[1] + 0.0722 * srgb[2];
+}
 
-  // brighter bg => dark text, darker bg => white text
-  return luminance > 0.65 ? "#0b1220" : "#ffffff";
+function contrastRatio(a: string, b: string) {
+  const L1 = luminance(a);
+  const L2 = luminance(b);
+  const lighter = Math.max(L1, L2);
+  const darker = Math.min(L1, L2);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+/**
+ * ✅ Brand resolution:
+ * - default BYUND blue/white
+ * - merchant overrides only if valid hex
+ * - enforce legible text on chosen background
+ */
+function resolveBrand(brandBg: unknown, brandText: unknown) {
+  const bg = isHexColor(brandBg) ? brandBg : BYUND_BLUE;
+  const textRaw = isHexColor(brandText) ? brandText : BYUND_WHITE;
+
+  const cr = contrastRatio(bg, textRaw);
+  const text =
+    cr >= 3.5
+      ? textRaw
+      : contrastRatio(bg, "#ffffff") >= contrastRatio(bg, "#0b1220")
+      ? "#ffffff"
+      : "#0b1220";
+
+  const isTextLight = contrastRatio(bg, "#ffffff") > contrastRatio(bg, "#0b1220");
+  return { bg, text, isTextLight };
 }
 
 export default function PayPageClient({ link, currentYear }: Props) {
   const [variableAmount, setVariableAmount] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const brand = useMemo(
+    () => resolveBrand(link.brandBg, link.brandText),
+    [link.brandBg, link.brandText]
+  );
 
   const isVariable = link.mode === "variable";
 
@@ -111,9 +155,7 @@ export default function PayPageClient({ link, currentYear }: Props) {
   const hasValidAmount = typeof amountCents === "number" && amountCents > 0;
   const canSubmit = hasValidAmount && !isSubmitting;
 
-  const bigAmount = hasValidAmount ? usdCentsToPretty(amountCents!) : "0.00";
-
-  const payBtnText = readableTextOn(link.brandBg);
+  const amountPretty = hasValidAmount ? usdCentsToPretty(amountCents!) : "0.00";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -121,89 +163,228 @@ export default function PayPageClient({ link, currentYear }: Props) {
 
     setIsSubmitting(true);
     try {
-      console.log("Checkout submit:", {
-        publicId: link.publicId,
-        amountUsdCents: amountCents,
-      });
-
+      // TODO: call your checkout/session API
       await new Promise((r) => setTimeout(r, 650));
     } finally {
       setIsSubmitting(false);
     }
   }
 
+  // subtle pill styling for either light/dark brand
+  const pillStyle = brand.isTextLight
+    ? {
+        backgroundColor: "rgba(255,255,255,0.16)",
+        borderColor: "rgba(255,255,255,0.22)",
+        color: "rgba(255,255,255,0.92)",
+      }
+    : {
+        backgroundColor: "rgba(0,0,0,0.08)",
+        borderColor: "rgba(0,0,0,0.12)",
+        color: "rgba(0,0,0,0.78)",
+      };
+
+  // ✅ Branded "unavailable" state for inactive links (instead of generic 404)
+  if (!link.isActive) {
+    return (
+      <div className="min-h-screen bg-white">
+        <div className="grid min-h-screen grid-cols-1 lg:grid-cols-2">
+          {/* LEFT: brand panel */}
+          <section
+            className="relative flex min-h-[44vh] flex-col overflow-hidden p-6 lg:min-h-screen lg:p-10"
+            style={{ backgroundColor: brand.bg, color: brand.text }}
+          >
+            {/* micro grid */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0"
+              style={{
+                opacity: 0.22,
+                backgroundImage:
+                  "linear-gradient(rgba(255,255,255,0.10) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.10) 1px, transparent 1px)",
+                backgroundSize: "72px 72px",
+                backgroundPosition: "center",
+              }}
+            />
+            {/* bloom */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0"
+              style={{
+                opacity: 0.22,
+                background:
+                  "radial-gradient(900px 700px at 22% 30%, rgba(255,255,255,0.32), transparent 60%), radial-gradient(700px 520px at 72% 68%, rgba(0,0,0,0.18), transparent 55%)",
+              }}
+            />
+
+            <div className="relative flex flex-1 flex-col justify-center">
+              <div className="mx-auto w-full max-w-xl">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="leading-tight">
+                    <p className="text-[11px] uppercase tracking-[0.22em] opacity-75">Payment to</p>
+                    <p className="text-[18px] font-semibold tracking-[-0.03em]">{link.merchantName}</p>
+                  </div>
+
+                  <span
+                    className="inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-medium backdrop-blur"
+                    style={pillStyle}
+                  >
+                    USDC on Base
+                  </span>
+                </div>
+
+                <div className="mt-10">
+                  <p className="text-[12px] uppercase tracking-[0.22em] opacity-75">For</p>
+                  <h1 className="mt-2 text-[28px] font-semibold leading-tight tracking-[-0.04em] lg:text-[34px]">
+                    {link.linkName}
+                  </h1>
+
+                  {link.description ? (
+                    <p className="mt-3 text-[13px] opacity-85 lg:text-[14px]">{link.description}</p>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* RIGHT: message card */}
+          <section className="flex min-h-[56vh] flex-col items-center justify-center bg-white p-6 lg:min-h-screen lg:p-10">
+            <div className="w-full max-w-md">
+              <div className="rounded-3xl border border-border bg-white p-6 shadow-[0_16px_50px_rgba(15,17,21,0.07)] lg:p-7">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">
+                  Link unavailable
+                </p>
+
+                <h2 className="mt-2 text-[18px] font-semibold tracking-[-0.02em] text-foreground">
+                  This payment link isn’t accepting payments right now.
+                </h2>
+
+                <p className="mt-2 text-[13px] text-muted">
+                  Ask {link.merchantName} for an updated link, or try again later.
+                </p>
+
+                <div className="mt-5 flex flex-col gap-2">
+                  <Button
+                    className="w-full justify-center rounded-2xl py-3.5 text-[13px] font-semibold"
+                    style={{ backgroundColor: brand.bg, color: brand.text }}
+                    onClick={() => {
+                      if (typeof window !== "undefined") window.location.reload();
+                    }}
+                  >
+                    Refresh
+                  </Button>
+
+                  <Link href="/" className="w-full">
+                    <Button variant="secondary" className="w-full justify-center">
+                      Return to BYUND
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+
+              <div className="mt-6 flex items-center justify-center gap-3 text-[11px] text-muted">
+                <span>
+                  Powered by <span className="font-semibold text-foreground">BYUND</span>
+                </span>
+                <span className="opacity-40">•</span>
+                <Link href="/privacy" className="hover:text-foreground hover:underline">
+                  Privacy
+                </Link>
+                <span className="opacity-40">•</span>
+                <span>© {currentYear} BYUND</span>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-surface">
+    <div className="min-h-screen bg-white">
       <div className="grid min-h-screen grid-cols-1 lg:grid-cols-2">
-        {/* LEFT: merchant branded panel */}
+        {/* LEFT: brand panel */}
         <section
-          className="relative flex min-h-[46vh] flex-col p-6 lg:min-h-screen lg:p-10"
-          style={{ backgroundColor: link.brandBg, color: link.brandText }}
+          className="relative flex min-h-[44vh] flex-col overflow-hidden p-6 lg:min-h-screen lg:p-10"
+          style={{ backgroundColor: brand.bg, color: brand.text }}
         >
-          {/* ✅ Centered content (no clustered top) */}
-          <div className="flex flex-1 flex-col justify-center">
+          {/* micro grid */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0"
+            style={{
+              opacity: 0.22,
+              backgroundImage:
+                "linear-gradient(rgba(255,255,255,0.10) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.10) 1px, transparent 1px)",
+              backgroundSize: "72px 72px",
+              backgroundPosition: "center",
+            }}
+          />
+          {/* bloom */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0"
+            style={{
+              opacity: 0.22,
+              background:
+                "radial-gradient(900px 700px at 22% 30%, rgba(255,255,255,0.32), transparent 60%), radial-gradient(700px 520px at 72% 68%, rgba(0,0,0,0.18), transparent 55%)",
+            }}
+          />
+
+          <div className="relative flex flex-1 flex-col justify-center">
             <div className="mx-auto w-full max-w-xl">
               <div className="flex items-center justify-between gap-4">
                 <div className="leading-tight">
-                  <p className="text-[11px] uppercase tracking-[0.22em] opacity-70">
-                    Payment to
-                  </p>
-                  <p className="text-[18px] font-semibold tracking-[-0.03em]">
-                    {link.merchantName}
-                  </p>
+                  <p className="text-[11px] uppercase tracking-[0.22em] opacity-75">Payment to</p>
+                  <p className="text-[18px] font-semibold tracking-[-0.03em]">{link.merchantName}</p>
                 </div>
 
-                <span className="inline-flex items-center rounded-full bg-white/70 px-3 py-1 text-[11px] font-medium text-black/70">
-                  USDC • Base
+                <span
+                  className="inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-medium backdrop-blur"
+                  style={pillStyle}
+                >
+                  USDC on Base
                 </span>
               </div>
 
               <div className="mt-10">
-                <p className="text-[12px] uppercase tracking-[0.22em] opacity-70">
-                  For
-                </p>
+                <p className="text-[12px] uppercase tracking-[0.22em] opacity-75">For</p>
                 <h1 className="mt-2 text-[28px] font-semibold leading-tight tracking-[-0.04em] lg:text-[34px]">
                   {link.linkName}
                 </h1>
 
                 {link.description ? (
-                  <p className="mt-3 text-[13px] opacity-80 lg:text-[14px]">
-                    {link.description}
-                  </p>
+                  <p className="mt-3 text-[13px] opacity-85 lg:text-[14px]">{link.description}</p>
                 ) : null}
               </div>
             </div>
           </div>
         </section>
 
-        {/* RIGHT: centered checkout */}
-        <section className="flex min-h-[54vh] flex-col items-center justify-center bg-white p-6 lg:min-h-screen lg:p-10">
+        {/* RIGHT: checkout */}
+        <section className="flex min-h-[56vh] flex-col items-center justify-center bg-white p-6 lg:min-h-screen lg:p-10">
           <div className="w-full max-w-md">
-            <div className="rounded-3xl border border-border bg-white p-6 shadow-[0_20px_60px_rgba(15,17,21,0.08)] lg:p-7">
+            <div className="rounded-3xl border border-border bg-white p-6 shadow-[0_16px_50px_rgba(15,17,21,0.07)] lg:p-7">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">
                 Amount
               </p>
 
-              <div className="mt-3">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-[13px] font-medium text-muted">USD</span>
-                  <div className="min-w-0 flex-1 overflow-hidden">
-                    <span className="block truncate text-[40px] font-semibold leading-none tracking-[-0.05em] [font-variant-numeric:tabular-nums] lg:text-[44px]">
-                      {bigAmount}
+              {/* calm amount */}
+              <div className="mt-3 flex items-baseline justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-[12px] font-medium text-muted">USD</span>
+                    <span className="truncate text-[22px] font-semibold tracking-[-0.02em] text-foreground [font-variant-numeric:tabular-nums] sm:text-[24px]">
+                      {amountPretty}
                     </span>
                   </div>
                 </div>
-
-                <p className="mt-2 text-[12px] text-muted">
-                  You’ll confirm an equivalent USDC payment on Base in your wallet.
-                </p>
               </div>
 
               <form className="mt-5 space-y-4" onSubmit={handleSubmit} noValidate>
                 {isVariable ? (
                   <div className="space-y-1.5">
                     <label htmlFor="amount" className="text-xs font-medium text-foreground">
-                      Amount in USD
+                      Enter amount
                     </label>
                     <div className="relative">
                       <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-xs text-muted">
@@ -235,14 +416,14 @@ export default function PayPageClient({ link, currentYear }: Props) {
                   <p className="text-[11px] text-[#ef4444]">{amountState.reason}</p>
                 ) : null}
 
-                {/* ✅ Merchant-branded pay button */}
+                {/* Pay button is the hero */}
                 <Button
                   type="submit"
-                  className="w-full justify-center"
+                  className="w-full justify-center rounded-2xl py-3.5 text-[13px] font-semibold shadow-[0_10px_28px_rgba(0,0,0,0.10)]"
                   disabled={!canSubmit}
                   style={{
-                    backgroundColor: link.brandBg,
-                    color: payBtnText,
+                    backgroundColor: brand.bg,
+                    color: brand.text,
                   }}
                 >
                   {isSubmitting ? "Processing…" : "Pay now"}

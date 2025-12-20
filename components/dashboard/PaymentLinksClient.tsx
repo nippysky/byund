@@ -1,5 +1,7 @@
+// components/dashboard/PaymentLinksClient.tsx
 "use client";
 
+import Link from "next/link";
 import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, Copy, ReceiptText, Loader2 } from "lucide-react";
@@ -48,9 +50,7 @@ function formatDate(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
 
-  // BYUND timestamps: Nigeria / West Africa time
   const tz = "Africa/Lagos";
-
   return new Intl.DateTimeFormat(undefined, {
     timeZone: tz,
     month: "short",
@@ -128,7 +128,6 @@ function StatusSwitch({
         isDisabled ? "opacity-70 cursor-wait" : "cursor-pointer",
       ].join(" ")}
     >
-      {/* iOS-like track */}
       <span
         className={[
           "relative inline-flex h-6 w-11 items-center rounded-full border transition-colors",
@@ -138,7 +137,6 @@ function StatusSwitch({
           isDisabled ? "" : "hover:brightness-[0.98]",
         ].join(" ")}
       >
-        {/* knob */}
         <span
           className={[
             "absolute left-0.5 top-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-white shadow-sm transition-transform",
@@ -149,7 +147,6 @@ function StatusSwitch({
         </span>
       </span>
 
-      {/* label */}
       <span className="text-[11px] font-medium text-foreground/80">
         {pending ? "Saving…" : checked ? "Active" : "Inactive"}
       </span>
@@ -160,9 +157,13 @@ function StatusSwitch({
 export default function PaymentLinksClient({
   env,
   initialLinks,
+  canCreate,
+  onboardingHref,
 }: {
   env: DashboardMode;
   initialLinks: LinkRow[];
+  canCreate: boolean;
+  onboardingHref: string;
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -170,10 +171,7 @@ export default function PaymentLinksClient({
   const [links, setLinks] = useState<LinkRow[]>(initialLinks);
   const [isPending, startTransition] = useTransition();
 
-  // Prevent double toast / double add if onCreated fires twice
   const handledCreatedIdsRef = useRef<Set<string>>(new Set());
-
-  // Per-row toggle loading
   const togglingRef = useRef<Set<string>>(new Set());
   const [, forceRerender] = useState(0);
   const isToggling = (publicId: string) => togglingRef.current.has(publicId);
@@ -243,7 +241,6 @@ export default function PaymentLinksClient({
 
     const next = !link.isActive;
 
-    // Optimistic update
     setLinks((prev) =>
       prev.map((l) => (l.publicId === link.publicId ? { ...l, isActive: next } : l))
     );
@@ -269,7 +266,6 @@ export default function PaymentLinksClient({
 
       startTransition(() => router.refresh());
     } catch {
-      // Revert on failure
       setLinks((prev) =>
         prev.map((l) => (l.publicId === link.publicId ? { ...l, isActive: !next } : l))
       );
@@ -287,6 +283,28 @@ export default function PaymentLinksClient({
 
   return (
     <div className="space-y-4">
+      {/* Wallet-required callout */}
+      {!canCreate ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm">
+          <p className="font-medium text-amber-900 tracking-[-0.01em]">
+            Finish setup to create payment links
+          </p>
+          <p className="mt-1 text-[13px] text-amber-900/80">
+            Add your settlement wallet first — BYUND settles USDC on Base directly to it.
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <Link href={onboardingHref}>
+              <Button size="sm">Complete onboarding</Button>
+            </Link>
+            <Link href="/dashboard/settings/profile">
+              <Button size="sm" variant="secondary">
+                Go to settings
+              </Button>
+            </Link>
+          </div>
+        </div>
+      ) : null}
+
       {/* Top row */}
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted">
@@ -306,7 +324,14 @@ export default function PaymentLinksClient({
           <Button variant="secondary" size="sm" className="hidden md:inline-flex">
             View docs
           </Button>
-          <CreatePaymentLinkButton size="sm" onCreated={handleCreated} />
+
+          {canCreate ? (
+            <CreatePaymentLinkButton size="sm" onCreated={handleCreated} />
+          ) : (
+            <Link href={onboardingHref}>
+              <Button size="sm">Complete setup</Button>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -427,7 +452,6 @@ export default function PaymentLinksClient({
                           <span className="text-[13px]">{formatAmount(link)}</span>
                         </td>
 
-                        {/* ✅ Switch replaces “clickable pill” */}
                         <td className="px-4 py-3 align-top">
                           <StatusSwitch
                             checked={link.isActive}
@@ -489,18 +513,30 @@ export default function PaymentLinksClient({
               Create your first link. Your dashboard is currently in{" "}
               <span className="font-medium">{env === "LIVE" ? "Live" : "Test"}</span> mode.
             </p>
+
             <div className="mt-4">
-              <CreatePaymentLinkButton size="sm" onCreated={handleCreated} />
+              {canCreate ? (
+                <CreatePaymentLinkButton size="sm" onCreated={handleCreated} />
+              ) : (
+                <Link href={onboardingHref}>
+                  <Button size="sm">Complete setup</Button>
+                </Link>
+              )}
             </div>
           </div>
         )}
       </div>
 
-      <div className="rounded-2xl border border-dashed border-border bg-surface/40 px-4 py-4 text-xs text-muted md:px-5 md:py-5">
-        <p className="font-medium text-foreground">Per-link analytics (coming soon)</p>
-        <p className="mt-1">
-          Once payments are wired, we’ll show conversion, payment statuses, and settlement timelines per link.
+      {/* ✅ Replaces the “analytics coming soon” block */}
+      <div className="flex flex-col items-start justify-between gap-3 rounded-2xl border border-border bg-white px-4 py-4 text-xs text-muted md:flex-row md:items-center">
+        <p>
+          Tip: use <span className="font-medium text-foreground">Activity</span> to see recent payments and link events.
         </p>
+        <Link href="/dashboard/activity">
+          <Button size="sm" variant="secondary">
+            Open activity
+          </Button>
+        </Link>
       </div>
     </div>
   );

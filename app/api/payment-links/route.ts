@@ -11,7 +11,7 @@ import type { DashboardMode } from "@/lib/generated/prisma/client";
 const CreateSchema = z.object({
   name: z.string().min(1).max(120),
   mode: z.enum(["FIXED", "VARIABLE"]),
-  amount: z.string().nullable().optional(), // only for FIXED
+  amount: z.string().nullable().optional(),
   description: z.string().max(280).nullable().optional(),
   isActive: z.boolean().optional(),
 });
@@ -28,8 +28,7 @@ function assertSameOrigin(req: Request) {
 }
 
 function base62FromBytes(bytes: Buffer) {
-  const alphabet =
-    "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
   let num = BigInt("0x" + bytes.toString("hex"));
   let out = "";
   while (num > BigInt(0)) {
@@ -57,37 +56,30 @@ function parseUsdToCents(input: string) {
   const cents = Number((decPart + "00").slice(0, 2));
   const total = dollars * 100 + cents;
 
-  if (!Number.isFinite(total) || total <= 0) {
-    throw new Error("Amount must be greater than 0");
-  }
+  if (!Number.isFinite(total) || total <= 0) throw new Error("Amount must be greater than 0");
   if (total > 2_000_000_00) throw new Error("Amount is too large");
 
   return total;
 }
 
-async function getMerchantEnvOrThrow(merchantId: string): Promise<DashboardMode> {
-  const merchant = await prisma.merchant.findUnique({
-    where: { id: merchantId },
-    select: { dashboardMode: true },
-  });
-  return merchant?.dashboardMode ?? "TEST";
+function hasValidSettlementWallet(wallet: unknown) {
+  if (typeof wallet !== "string") return false;
+  const w = wallet.trim();
+  return /^0x[a-fA-F0-9]{40}$/.test(w);
 }
+
+const V1_ENV: DashboardMode = "LIVE";
 
 export async function GET() {
   const auth = await requireApiAuth();
   if (!auth.ok) return auth.res;
 
   if (!auth.merchantId) {
-    return NextResponse.json(
-      { ok: false, error: "Merchant profile not found" },
-      { status: 400 }
-    );
+    return NextResponse.json({ ok: false, error: "Merchant profile not found" }, { status: 400 });
   }
 
-  const env = await getMerchantEnvOrThrow(auth.merchantId);
-
   const links = await prisma.paymentLink.findMany({
-    where: { merchantId: auth.merchantId, environment: env },
+    where: { merchantId: auth.merchantId, environment: V1_ENV },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
@@ -102,14 +94,13 @@ export async function GET() {
     },
   });
 
-  return NextResponse.json({
+  const res = NextResponse.json({
     ok: true,
-    env,
-    links: links.map((l) => ({
-      ...l,
-      createdAt: l.createdAt.toISOString(),
-    })),
+    env: V1_ENV,
+    links: links.map((l) => ({ ...l, createdAt: l.createdAt.toISOString() })),
   });
+  res.headers.set("Cache-Control", "no-store");
+  return res;
 }
 
 export async function POST(req: Request) {
@@ -120,9 +111,22 @@ export async function POST(req: Request) {
     if (!auth.ok) return auth.res;
 
     if (!auth.merchantId) {
+      return NextResponse.json({ ok: false, error: "Merchant profile not found" }, { status: 400 });
+    }
+
+    // ✅ HARD GATE: must have settlement wallet before creating links
+    const merchant = await prisma.merchant.findUnique({
+      where: { id: auth.merchantId },
+      select: { settlementWallet: true },
+    });
+
+    if (!hasValidSettlementWallet(merchant?.settlementWallet)) {
       return NextResponse.json(
-        { ok: false, error: "Merchant profile not found" },
-        { status: 400 }
+        {
+          ok: false,
+          error: "Set your settlement wallet before creating payment links.",
+        },
+        { status: 403 }
       );
     }
 
@@ -132,10 +136,6 @@ export async function POST(req: Request) {
     const fixedAmountCents =
       body.mode === "FIXED" ? parseUsdToCents(body.amount ?? "") : null;
 
-    // ✅ Source of truth: whatever mode the merchant is currently in.
-    const environment = await getMerchantEnvOrThrow(auth.merchantId);
-
-    // Ensure unique publicId (rare collision, but we handle it)
     let publicId = makePublicId(12);
     for (let i = 0; i < 3; i++) {
       const exists = await prisma.paymentLink.findUnique({
@@ -149,7 +149,7 @@ export async function POST(req: Request) {
     const created = await prisma.paymentLink.create({
       data: {
         merchantId: auth.merchantId,
-        environment, // ✅ THIS fixes your bug
+        environment: V1_ENV,
         publicId,
         name: body.name,
         description: body.description ?? null,
@@ -164,19 +164,18 @@ export async function POST(req: Request) {
         mode: true,
         fixedAmountCents: true,
         isActive: true,
-        environment: true, // ✅ return env
+        environment: true,
         description: true,
         createdAt: true,
       },
     });
 
-    return NextResponse.json({
+    const res = NextResponse.json({
       ok: true,
-      link: {
-        ...created,
-        createdAt: created.createdAt.toISOString(),
-      },
+      link: { ...created, createdAt: created.createdAt.toISOString() },
     });
+    res.headers.set("Cache-Control", "no-store");
+    return res;
   } catch (e) {
     const message =
       e instanceof z.ZodError

@@ -1,13 +1,16 @@
 // app/dashboard/page.tsx
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
+import { unstable_noStore as noStore } from "next/cache";
+import { redirect } from "next/navigation";
 import PageHeader from "@/components/dashboard/PageHeader";
 import { CreatePaymentLinkButton } from "@/components/dashboard/CreatePaymentLinkButton";
 import StatCard from "@/components/dashboard/StatCard";
+import RecentActivityClient, { type ActivityRow } from "@/components/dashboard/RecentActivityClient";
 import { requireAuth } from "@/lib/auth/require-auth";
 import { prisma } from "@/lib/db";
 import { CreditCard, Link2, TrendingUp } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 function formatUsdFromCents(cents: number) {
   const dollars = cents / 100;
@@ -21,90 +24,13 @@ function formatUsdFromCents(cents: number) {
 
 type PaymentStatus = "CONFIRMED" | "SUBMITTED" | "CREATED" | "FAILED" | "CANCELED";
 
-type ActivityItem =
-  | {
-      kind: "payment";
-      id: string;
-      at: Date;
-      label: string;
-      sublabel: string;
-      status: PaymentStatus;
-      amountUsdCents: number;
-    }
-  | {
-      kind: "link";
-      id: string;
-      at: Date;
-      label: string;
-      sublabel: string;
-      isActive: boolean;
-    };
-
-function PaymentStatusBadge({ status }: { status: PaymentStatus }) {
-  const tone =
-    status === "CONFIRMED"
-      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-      : status === "FAILED" || status === "CANCELED"
-      ? "bg-rose-50 text-rose-700 border-rose-200"
-      : "bg-surface text-muted border-border";
-
-  const label =
-    status === "CONFIRMED"
-      ? "Succeeded"
-      : status === "SUBMITTED"
-      ? "Submitted"
-      : status === "CREATED"
-      ? "Created"
-      : status === "FAILED"
-      ? "Failed"
-      : "Canceled";
-
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium",
-        tone
-      )}
-    >
-      {label}
-    </span>
-  );
-}
-
-function LinkStatusBadge({ isActive }: { isActive: boolean }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium",
-        isActive
-          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-          : "border-border bg-surface text-muted"
-      )}
-    >
-      <span
-        className={cn(
-          "h-1.5 w-1.5 rounded-full",
-          isActive ? "bg-emerald-500" : "bg-border"
-        )}
-      />
-      {isActive ? "Active" : "Inactive"}
-    </span>
-  );
-}
-
-function formatWhen(d: Date) {
-  return d.toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
 export default async function DashboardHome() {
+  noStore();
+
   const user = await requireAuth();
 
-  const merchantId = user.merchant?.id ?? null;
+  const merchant = user.merchant ?? null;
+  const merchantId = merchant?.id ?? null;
 
   if (!merchantId) {
     return (
@@ -115,9 +41,7 @@ export default async function DashboardHome() {
           actions={<CreatePaymentLinkButton size="sm" />}
         />
         <div className="rounded-2xl border border-border bg-white p-4 md:p-6">
-          <p className="text-sm font-medium tracking-[-0.01em]">
-            Merchant profile missing
-          </p>
+          <p className="text-sm font-medium tracking-[-0.01em]">Merchant profile missing</p>
           <p className="mt-2 text-sm text-muted">
             Your account is signed in, but the merchant profile hasn’t been created yet.
             This will be auto-created during registration in V1.
@@ -125,6 +49,11 @@ export default async function DashboardHome() {
         </div>
       </div>
     );
+  }
+
+  // ✅ Guard: if not onboarded, force onboarding
+  if (!merchant?.settlementWallet) {
+    redirect(`/onboarding?next=${encodeURIComponent("/dashboard")}`);
   }
 
   const [
@@ -138,17 +67,11 @@ export default async function DashboardHome() {
     prisma.paymentLink.count({ where: { merchantId, isActive: true } }),
     prisma.paymentLink.count({ where: { merchantId } }),
     prisma.payment.aggregate({
-      where: {
-        link: { merchantId },
-        status: "CONFIRMED",
-      },
+      where: { link: { merchantId }, status: "CONFIRMED" },
       _sum: { amountUsdCents: true },
     }),
     prisma.payment.count({
-      where: {
-        link: { merchantId },
-        status: "CONFIRMED",
-      },
+      where: { link: { merchantId }, status: "CONFIRMED" },
     }),
     prisma.payment.findMany({
       where: { link: { merchantId } },
@@ -159,7 +82,7 @@ export default async function DashboardHome() {
         createdAt: true,
         status: true,
         amountUsdCents: true,
-        link: { select: { name: true } },
+        link: { select: { name: true, publicId: true } },
       },
     }),
     prisma.paymentLink.findMany({
@@ -178,33 +101,35 @@ export default async function DashboardHome() {
 
   const totalProcessedCents = confirmedPaymentsAgg._sum.amountUsdCents ?? 0;
 
-  const activity: ActivityItem[] = [
+  const activity: ActivityRow[] = [
     ...recentPayments.map((p) => ({
       kind: "payment" as const,
       id: p.id,
-      at: p.createdAt,
+      at: p.createdAt.toISOString(),
       label: p.link?.name ?? "Payment",
       sublabel: `Payment ${formatUsdFromCents(p.amountUsdCents)}`,
       status: p.status as PaymentStatus,
       amountUsdCents: p.amountUsdCents,
+      linkPublicId: p.link?.publicId ?? null,
     })),
     ...recentLinks.map((l) => ({
       kind: "link" as const,
       id: l.id,
-      at: l.createdAt,
+      at: l.createdAt.toISOString(),
       label: l.name,
       sublabel: `/pay/${l.publicId}`,
       isActive: l.isActive,
+      publicId: l.publicId,
     })),
   ]
-    .sort((a, b) => b.at.getTime() - a.at.getTime())
+    .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
     .slice(0, 10);
 
   return (
     <div>
       <PageHeader
         title="Overview"
-        description="High-level view of your USD volumes, recent payments, and live status. This is the starting point for V1."
+        description="High-level view of your USD volumes, recent payments, and live status."
         actions={<CreatePaymentLinkButton size="sm" />}
       />
 
@@ -240,49 +165,7 @@ export default async function DashboardHome() {
           <p className="text-[11px] text-muted">Latest 10 events</p>
         </div>
 
-        {activity.length === 0 ? (
-          <div className="mt-4 rounded-2xl border border-dashed border-border bg-surface/40 px-4 py-5">
-            <p className="text-sm font-medium tracking-[-0.01em]">Nothing yet</p>
-            <p className="mt-1 text-sm text-muted">
-              When your first payments arrive, you’ll see a timeline here: link created,
-              payment submitted, confirmed, and settlement events.
-            </p>
-          </div>
-        ) : (
-          <div className="mt-4 divide-y divide-border">
-            {activity.map((item) => (
-              <div
-                key={`${item.kind}_${item.id}`}
-                className="flex items-start justify-between gap-4 py-3"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-foreground">
-                    {item.label}
-                  </p>
-                  <p className="mt-0.5 truncate text-[12px] text-muted">
-                    {item.sublabel}
-                  </p>
-                  <p className="mt-1 text-[11px] text-muted">
-                    {formatWhen(item.at)}
-                  </p>
-                </div>
-
-                <div className="flex shrink-0 items-center gap-2">
-                  {item.kind === "payment" ? (
-                    <>
-                      <span className="hidden text-[12px] font-medium text-foreground sm:inline">
-                        {formatUsdFromCents(item.amountUsdCents)}
-                      </span>
-                      <PaymentStatusBadge status={item.status} />
-                    </>
-                  ) : (
-                    <LinkStatusBadge isActive={item.isActive} />
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        <RecentActivityClient items={activity} />
       </div>
     </div>
   );

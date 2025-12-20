@@ -2,6 +2,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Public_Sans } from "next/font/google";
+import Providers from "./providers";
 
 const publicSans = Public_Sans({
   subsets: ["latin"],
@@ -32,7 +33,7 @@ export default function RootLayout({
           min-h-screen
         `}
       >
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

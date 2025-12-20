@@ -1,6 +1,8 @@
-// app/register/page.tsx
+// app/(auth)/register/page.tsx  (or app/register/page.tsx — wherever it lives)
 import Link from "next/link";
 import { RegisterForm } from "./RegisterForm";
+
+type SearchParams = Record<string, string | string[] | undefined>;
 
 function safeNextPath(raw: unknown) {
   if (typeof raw !== "string" || !raw) return "/dashboard";
@@ -9,19 +11,20 @@ function safeNextPath(raw: unknown) {
   return raw;
 }
 
-export default function RegisterPage({
+export default async function RegisterPage({
   searchParams,
 }: {
-  searchParams?: Record<string, string | string[] | undefined>;
+  searchParams?: SearchParams | Promise<SearchParams>;
 }) {
-  const rawNext = searchParams?.next;
+  const sp = (await searchParams) ?? {};
+
+  const rawNext = sp.next;
   const nextValue = Array.isArray(rawNext) ? rawNext[0] : rawNext;
   const nextPath = safeNextPath(nextValue);
 
   return (
     <div className="min-h-screen bg-surface">
       <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-6 py-8">
-        {/* Top logo */}
         <header className="mb-10 flex items-center">
           <Link href="/" className="inline-flex items-center gap-2">
             <span className="text-[20px] font-semibold tracking-[-0.04em]">
@@ -32,7 +35,6 @@ export default function RegisterPage({
 
         <main className="flex flex-1 flex-col justify-center">
           <div className="grid gap-10 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] md:items-start">
-            {/* Left: value prop / bullets – desktop only */}
             <section className="hidden space-y-5 md:block">
               <p className="text-xs font-medium uppercase tracking-[0.25em] text-muted">
                 Global USD rail
@@ -53,7 +55,6 @@ export default function RegisterPage({
               </ul>
             </section>
 
-            {/* Right: signup card */}
             <section className="mx-auto w-full max-w-md rounded-2xl border border-border bg-white px-6 py-7 shadow-sm">
               <h2 className="text-xl font-semibold tracking-tight">
                 Create your account
@@ -67,20 +68,13 @@ export default function RegisterPage({
             </section>
           </div>
 
-          {/* Footer */}
           <footer className="mt-8 flex items-center justify-between text-[11px] text-muted">
             <span>© {new Date().getFullYear()} BYUND</span>
             <div className="flex gap-4">
-              <Link
-                href="/privacy"
-                className="hover:text-foreground hover:underline"
-              >
+              <Link href="/privacy" className="hover:text-foreground hover:underline">
                 Privacy
               </Link>
-              <Link
-                href="/terms"
-                className="hover:text-foreground hover:underline"
-              >
+              <Link href="/terms" className="hover:text-foreground hover:underline">
                 Terms
               </Link>
             </div>

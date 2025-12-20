@@ -20,7 +20,6 @@ const paymentLinkSchema = z
 
     const raw = (values.amount ?? "").trim();
 
-    // allow typing states but reject on submit
     if (!raw || raw === "0." || raw === ".") {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -56,9 +55,35 @@ type CreatedLink = {
 type CreatePaymentLinkButtonProps = {
   size?: "sm" | "md";
   onCreated?: (created: CreatedLink) => void;
+
+  /**
+   * Optional: override where we send users if they're blocked (no settlement wallet).
+   * Defaults to /onboarding?next=<current path>
+   */
+  onboardingHref?: string;
 };
 
-export function CreatePaymentLinkButton({ size = "sm", onCreated }: CreatePaymentLinkButtonProps) {
+function safeNextPath(raw: string) {
+  if (!raw) return "/dashboard/payment-links";
+  if (!raw.startsWith("/")) return "/dashboard/payment-links";
+  if (raw.startsWith("//")) return "/dashboard/payment-links";
+  return raw;
+}
+
+function getDefaultOnboardingHref() {
+  if (typeof window === "undefined") {
+    return `/onboarding?next=${encodeURIComponent("/dashboard/payment-links")}`;
+  }
+  const nextRaw = `${window.location.pathname}${window.location.search ?? ""}`;
+  const next = safeNextPath(nextRaw);
+  return `/onboarding?next=${encodeURIComponent(next)}`;
+}
+
+export function CreatePaymentLinkButton({
+  size = "sm",
+  onCreated,
+  onboardingHref,
+}: CreatePaymentLinkButtonProps) {
   const { toast } = useToast();
 
   const [open, setOpen] = useState(false);
@@ -81,9 +106,7 @@ export function CreatePaymentLinkButton({ size = "sm", onCreated }: CreatePaymen
     },
   });
 
-
   const mode = watch("mode") || "fixed";
-
   const amountValue = watch("amount") ?? "";
 
   const baseInput =
@@ -102,7 +125,7 @@ export function CreatePaymentLinkButton({ size = "sm", onCreated }: CreatePaymen
   }
 
   function handleClose() {
-    if (isSubmitting) return; // avoid closing mid-request
+    if (isSubmitting) return;
     setVisible(false);
     if (typeof window !== "undefined") {
       window.setTimeout(() => setOpen(false), 180);
@@ -111,7 +134,12 @@ export function CreatePaymentLinkButton({ size = "sm", onCreated }: CreatePaymen
     }
   }
 
-  // money input behavior: digits + one dot + max 2 decimals, allow "0." while typing
+  function redirectToOnboarding() {
+    if (typeof window === "undefined") return;
+    const href = onboardingHref || getDefaultOnboardingHref();
+    window.location.assign(href);
+  }
+
   function handleAmountChange(raw: string) {
     let cleaned = raw.replace(/[^\d.]/g, "");
 
@@ -150,7 +178,6 @@ export function CreatePaymentLinkButton({ size = "sm", onCreated }: CreatePaymen
 
   const onSubmit: SubmitHandler<NewPaymentLinkValues> = async (values) => {
     try {
-      // Map UI -> API enum
       const payload = {
         name: values.name.trim(),
         mode: values.mode === "fixed" ? "FIXED" : "VARIABLE",
@@ -167,6 +194,20 @@ export function CreatePaymentLinkButton({ size = "sm", onCreated }: CreatePaymen
       });
 
       const data = await res.json().catch(() => ({}));
+
+      // ✅ Special UX for “wallet not set”
+      if (res.status === 403) {
+        toast({
+          title: "Finish setup first",
+          variant: "warning",
+          message: data?.error ?? "Add your settlement wallet to create payment links.",
+        });
+
+        handleClose();
+        redirectToOnboarding();
+        return;
+      }
+
       if (!res.ok || !data?.ok) {
         throw new Error(data?.error ?? "Failed to create payment link");
       }
@@ -211,7 +252,6 @@ export function CreatePaymentLinkButton({ size = "sm", onCreated }: CreatePaymen
               (visible ? "translate-y-0 scale-100 opacity-100" : "translate-y-2 scale-95 opacity-0")
             }
           >
-            {/* Header */}
             <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
               <div>
                 <h2 className="text-sm font-semibold tracking-[-0.02em]">New payment link</h2>
@@ -231,9 +271,7 @@ export function CreatePaymentLinkButton({ size = "sm", onCreated }: CreatePaymen
               </button>
             </div>
 
-            {/* Body */}
             <form className="space-y-4 px-5 pb-5 pt-4" onSubmit={handleSubmit(onSubmit)} noValidate>
-              {/* Name */}
               <div className="space-y-1.5">
                 <label htmlFor="link-name" className="text-xs font-medium text-foreground">
                   Payment name
@@ -249,7 +287,6 @@ export function CreatePaymentLinkButton({ size = "sm", onCreated }: CreatePaymen
                 {errors.name && <p className="text-[11px] text-[#ef4444]">{errors.name.message}</p>}
               </div>
 
-              {/* Amount */}
               <div className="space-y-2">
                 <label className="text-xs font-medium text-foreground">Amount</label>
 
@@ -257,9 +294,7 @@ export function CreatePaymentLinkButton({ size = "sm", onCreated }: CreatePaymen
                   <button
                     type="button"
                     disabled={isSubmitting}
-                    onClick={() =>
-                      setValue("mode", "fixed", { shouldDirty: true, shouldValidate: true })
-                    }
+                    onClick={() => setValue("mode", "fixed", { shouldDirty: true, shouldValidate: true })}
                     className={
                       "flex flex-col items-start rounded-md border px-3 py-2 text-left text-xs transition disabled:opacity-70 " +
                       (mode === "fixed"
@@ -277,9 +312,7 @@ export function CreatePaymentLinkButton({ size = "sm", onCreated }: CreatePaymen
                   <button
                     type="button"
                     disabled={isSubmitting}
-                    onClick={() =>
-                      setValue("mode", "variable", { shouldDirty: true, shouldValidate: true })
-                    }
+                    onClick={() => setValue("mode", "variable", { shouldDirty: true, shouldValidate: true })}
                     className={
                       "flex flex-col items-start rounded-md border px-3 py-2 text-left text-xs transition disabled:opacity-70 " +
                       (mode === "variable"
@@ -322,7 +355,6 @@ export function CreatePaymentLinkButton({ size = "sm", onCreated }: CreatePaymen
                 )}
               </div>
 
-              {/* Description (this is what you will render under payment name on checkout) */}
               <div className="space-y-1.5">
                 <label htmlFor="description" className="text-xs font-medium text-foreground">
                   Description (optional)
@@ -340,9 +372,13 @@ export function CreatePaymentLinkButton({ size = "sm", onCreated }: CreatePaymen
                 )}
               </div>
 
-              {/* Footer */}
               <div className="mt-4 flex items-center justify-end gap-2">
-                <button type="button" onClick={handleClose} className="text-action text-[11px]" disabled={isSubmitting}>
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  className="text-action text-[11px]"
+                  disabled={isSubmitting}
+                >
                   Cancel
                 </button>
 

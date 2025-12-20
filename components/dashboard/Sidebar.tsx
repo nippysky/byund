@@ -13,18 +13,13 @@ const navItems = [
   { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
-type SidebarProps = {
-  mode: "test" | "live";
-};
-
 function isActivePath(pathname: string, href: string) {
   if (href === "/dashboard") return pathname === "/dashboard";
   return pathname === href || pathname.startsWith(href + "/");
 }
 
-export default function Sidebar({ mode }: SidebarProps) {
+export default function Sidebar() {
   const pathname = usePathname();
-  const isLive = mode === "live";
 
   return (
     <aside className="hidden w-64 flex-none border-r border-border bg-white/95 md:flex md:flex-col">
@@ -34,17 +29,9 @@ export default function Sidebar({ mode }: SidebarProps) {
           <span className="text-[18px] font-semibold tracking-[-0.04em]">BYUND</span>
         </Link>
 
-        {/* Mode badge */}
-        <div
-          className={cn(
-            "inline-flex items-center gap-2 rounded-full border px-2 py-1 text-[11px]",
-            isLive ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-amber-200 bg-amber-50 text-amber-700"
-          )}
-          aria-label="Current mode"
-        >
-          <span className={cn("h-1.5 w-1.5 rounded-full", isLive ? "bg-emerald-500" : "bg-amber-400")} />
-          {isLive ? "Live" : "Test"}
-        </div>
+        <span className="inline-flex items-center rounded-full border border-border bg-surface px-2 py-1 text-[11px] text-muted">
+          v1
+        </span>
       </div>
 
       {/* Nav */}
@@ -70,33 +57,25 @@ export default function Sidebar({ mode }: SidebarProps) {
                 )}
               >
                 <span className="flex items-center gap-2">
-                  <Icon className={cn("h-4 w-4", active ? "text-foreground" : "text-muted group-hover:text-foreground")} />
+                  <Icon
+                    className={cn(
+                      "h-4 w-4",
+                      active ? "text-foreground" : "text-muted group-hover:text-foreground"
+                    )}
+                  />
                   <span className="font-medium tracking-[-0.01em]">{item.label}</span>
                 </span>
 
-                {active ? (
-                  <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-                ) : null}
+                {active ? <span className="h-1.5 w-1.5 rounded-full bg-accent" /> : null}
               </Link>
             );
           })}
-        </div>
-
-        {/* Nice spacer */}
-        <div className="mt-6 rounded-2xl border border-dashed border-border bg-surface/40 px-4 py-3 text-[12px]">
-          <p className="font-medium tracking-[-0.01em] text-foreground">Tip</p>
-          <p className="mt-1 text-[11px] text-muted">
-            Start in <span className="font-medium text-foreground">Test</span> to validate your checkout and webhooks,
-            then switch to <span className="font-medium text-foreground">Live</span> when ready.
-          </p>
         </div>
       </nav>
 
       {/* Bottom meta */}
       <div className="border-t border-border px-5 py-3 text-[11px] text-muted">
-        <p>
-          {isLive ? "Live mode • Real funds" : "Test mode • Safe sandbox"}
-        </p>
+        <p>Dashboard times: Africa/Lagos (WAT)</p>
       </div>
     </aside>
   );

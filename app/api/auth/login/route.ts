@@ -42,13 +42,25 @@ export async function POST(req: Request) {
 
     const user = await prisma.user.findUnique({
       where: { email },
-      select: { id: true, passwordHash: true },
+      select: {
+        id: true,
+        passwordHash: true,
+        merchant: { select: { settlementWallet: true } },
+      },
     });
 
-    if (!user) return NextResponse.json({ ok: false, error: "Invalid credentials" }, { status: 401 });
+    if (!user) {
+      return NextResponse.json({ ok: false, error: "Invalid credentials" }, { status: 401 });
+    }
 
     const ok = await verifyPassword(user.passwordHash, password);
-    if (!ok) return NextResponse.json({ ok: false, error: "Invalid credentials" }, { status: 401 });
+    if (!ok) {
+      return NextResponse.json({ ok: false, error: "Invalid credentials" }, { status: 401 });
+    }
+
+    // Decide onboarding requirement
+    const wallet = user.merchant?.settlementWallet?.trim() ?? "";
+    const onboardingRequired = !user.merchant || wallet.length === 0;
 
     // rotate sessions (optional but good)
     await prisma.session.deleteMany({ where: { userId: user.id } });
@@ -59,7 +71,7 @@ export async function POST(req: Request) {
 
     await prisma.session.create({ data: { tokenHash, userId: user.id, expiresAt } });
 
-    const res = NextResponse.json({ ok: true });
+    const res = NextResponse.json({ ok: true, onboardingRequired });
     res.cookies.set(COOKIE_NAME, token, cookieOptions(expiresAt));
     res.headers.set("Cache-Control", "no-store");
     return res;

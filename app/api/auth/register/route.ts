@@ -1,3 +1,6 @@
+// app/api/auth/register/route.ts
+export const runtime = "nodejs";
+
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { z } from "zod";
@@ -13,7 +16,10 @@ import {
 
 const RegisterSchema = z.object({
   name: z.string().min(1).max(80),
-  email: z.email().transform((s) => s.toLowerCase().trim()),
+  email: z
+    .string()
+    .email()
+    .transform((s) => s.toLowerCase().trim()),
   password: z.string().min(8).max(200),
 });
 
@@ -41,7 +47,10 @@ export async function POST(req: Request) {
 
     const { name, email, password } = parsed.data;
 
-    const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+    const existing = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
     if (existing) {
       return NextResponse.json({ ok: false, error: "Email already in use" }, { status: 409 });
     }
@@ -52,9 +61,17 @@ export async function POST(req: Request) {
       data: {
         email,
         passwordHash,
-        merchant: { create: { publicName: name, settlementWallet: null } },
+        merchant: {
+          create: {
+            publicName: name,
+            settlementWallet: null,
+          },
+        },
       },
-      select: { id: true },
+      select: {
+        id: true,
+        merchant: { select: { id: true } },
+      },
     });
 
     const token = newSessionToken();
@@ -65,11 +82,16 @@ export async function POST(req: Request) {
       data: { tokenHash, userId: user.id, expiresAt },
     });
 
-    const res = NextResponse.json({ ok: true }, { status: 201 });
+    const res = NextResponse.json(
+      { ok: true, merchantId: user.merchant?.id ?? null },
+      { status: 201 }
+    );
+
     res.cookies.set(COOKIE_NAME, token, cookieOptions(expiresAt));
     res.headers.set("Cache-Control", "no-store");
     return res;
-  } catch {
+  } catch (e) {
+    console.error("REGISTER_ERROR:", e);
     return NextResponse.json({ ok: false, error: "Registration failed" }, { status: 500 });
   }
 }

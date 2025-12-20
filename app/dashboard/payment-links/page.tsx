@@ -7,10 +7,7 @@ import PageHeader from "@/components/dashboard/PageHeader";
 import PaymentLinksClient from "@/components/dashboard/PaymentLinksClient";
 import { prisma } from "@/lib/db";
 import { requireAuth } from "@/lib/auth/require-auth";
-import type {
-  DashboardMode,
-  PaymentLinkMode,
-} from "@/lib/generated/prisma/client";
+import type { DashboardMode, PaymentLinkMode } from "@/lib/generated/prisma/client";
 
 type LinkRow = {
   id: string;
@@ -24,10 +21,9 @@ type LinkRow = {
 };
 
 export default async function PaymentLinksPage() {
-  // Ensure this route never serves a cached render.
   noStore();
 
-  const auth = await requireAuth(); // redirects if not signed in
+  const auth = await requireAuth();
 
   const merchantId = auth.merchant?.id;
   if (!merchantId) {
@@ -38,24 +34,24 @@ export default async function PaymentLinksPage() {
           description="Create, manage, and track USD payment links for invoices and products."
         />
         <div className="rounded-2xl border border-border bg-white p-4 md:p-6">
-          <p className="text-sm font-medium tracking-[-0.01em]">
-            Merchant profile not found
-          </p>
+          <p className="text-sm font-medium tracking-[-0.01em]">Merchant profile not found</p>
           <p className="mt-2 text-sm text-muted">
-            Please finish onboarding in Settings (public name, settlement wallet),
-            then return here.
+            Please finish onboarding in Settings (public name, settlement wallet), then return here.
           </p>
         </div>
       </div>
     );
   }
 
+  // V1 decision: dashboard always operates in LIVE environment
+  const env: DashboardMode = "LIVE";
+
   const merchant = await prisma.merchant.findUnique({
     where: { id: merchantId },
-    select: { dashboardMode: true },
+    select: { settlementWallet: true },
   });
 
-  const env: DashboardMode = merchant?.dashboardMode ?? "TEST";
+  const canCreate = Boolean(merchant?.settlementWallet);
 
   const links = await prisma.paymentLink.findMany({
     where: { merchantId, environment: env },
@@ -91,7 +87,12 @@ export default async function PaymentLinksPage() {
         description="Create, manage, and track USD payment links for invoices and products."
       />
 
-      <PaymentLinksClient env={env} initialLinks={initialLinks} />
+      <PaymentLinksClient
+        env={env}
+        initialLinks={initialLinks}
+        canCreate={canCreate}
+        onboardingHref={`/onboarding?next=${encodeURIComponent("/dashboard/payment-links")}`}
+      />
     </div>
   );
 }

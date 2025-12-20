@@ -8,7 +8,6 @@ import { prisma } from "@/lib/db";
 import { requireAuth } from "@/lib/auth/require-auth";
 import SettlementWalletCard from "@/components/dashboard/settings/SettlementWalletCard";
 
-
 export default async function WalletSettingsPage() {
   noStore();
 

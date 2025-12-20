@@ -1,5 +1,3 @@
-// prisma/schema.prisma
-
 generator client {
   provider = "prisma-client"
   output   = "../lib/generated/prisma"
@@ -39,15 +37,10 @@ model User {
 }
 
 model Session {
-  id String @id @default(cuid())
-
-  // Store ONLY the hash of the session token.
-  // If the DB is leaked, attackers still can't replay sessions.
-  tokenHash String @unique
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
   createdAt DateTime @default(now())
 
@@ -66,45 +59,41 @@ model Merchant {
 
   dashboardMode DashboardMode @default(TEST)
 
-  // ✅ Checkout branding defaults (V1 simplified)
-  brandBg   String @default("#EAF2FF") // left panel background
-  brandText String @default("#0B1220") // left panel text color
+  brandBg   String @default("#0066FF")
+  brandText String @default("#FFFFFF")
+
+  onboardingStep        Int      @default(0)
+  onboardingCompletedAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   links PaymentLink[]
 
-  // ✅ V2 dev platform (additive, unused in V1)
   apiKeys          ApiKey[]
   webhookEndpoints WebhookEndpoint[]
 }
 
+
 model PaymentLink {
-  id String @id @default(cuid())
+  id              String         @id @default(cuid())
+  publicId         String        @unique
+  merchantId       String
+  merchant         Merchant       @relation(fields: [merchantId], references: [id], onDelete: Cascade)
 
-  // Stable public identifier used in URLs: /pay/[publicId]
-  publicId String @unique
+  environment      DashboardMode  @default(LIVE)
 
-  merchantId String
-  merchant   Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
-
-  environment DashboardMode @default(TEST)
-
-  name        String
-  description String?
-  currency    String          @default("USD")
-  mode        PaymentLinkMode
-
-  // Only used when mode=FIXED; store as cents to avoid float drift
+  name             String
+  description      String?
+  currency         String         @default("USD")
+  mode             PaymentLinkMode
   fixedAmountCents Int?
+  isActive         Boolean        @default(true)
 
-  isActive Boolean @default(true)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  payments Payment[]
+  payments         Payment[]
 
   @@index([merchantId])
   @@index([merchantId, environment])
@@ -112,41 +101,27 @@ model PaymentLink {
 }
 
 model Payment {
-  id String @id @default(cuid())
+  id               String        @id @default(cuid())
+  linkId           String
+  link             PaymentLink   @relation(fields: [linkId], references: [id], onDelete: Cascade)
 
-  linkId String
-  link   PaymentLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
-
-  // Money-safe storage
   amountUsdCents   Int
-  amountUsdcMicros BigInt // 6 decimals (USDC)
+  amountUsdcMicros BigInt
 
-  payerAddress String?
+  payerAddress     String?
+  chainId          Int           @default(8453)
+  tokenAddress     String
+  txHash           String?       @unique
 
-  // Base mainnet default
-  chainId Int @default(8453)
+  status           PaymentStatus @default(CREATED)
 
-  tokenAddress String
-
-  // Unique once a tx exists
-  txHash String? @unique
-
-  status PaymentStatus @default(CREATED)
-
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  confirmedAt DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  confirmedAt      DateTime?
 
   @@index([linkId, createdAt])
   @@index([status])
 }
-
-//
-// =====================
-// V2: Developer Platform
-// (Additive — does not affect V1)
-// =====================
-//
 
 enum ApiKeyType {
   SECRET
@@ -159,30 +134,23 @@ enum ApiKeyStatus {
 }
 
 model ApiKey {
-  id String @id @default(cuid())
-
-  merchantId String
-  merchant   Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  id          String       @id @default(cuid())
+  merchantId  String
+  merchant    Merchant     @relation(fields: [merchantId], references: [id], onDelete: Cascade)
 
   environment DashboardMode @default(TEST)
   type        ApiKeyType
+  name        String?
+  status      ApiKeyStatus  @default(ACTIVE)
 
-  name   String?
-  status ApiKeyStatus @default(ACTIVE)
+  keyHash     String       @unique
+  prefix      String
+  last4       String
+  scopes      String[]     @default([])
 
-  // Store only hash (never store plaintext key)
-  keyHash String @unique
-
-  // For display/debug (non-sensitive)
-  prefix String // e.g. "byund_sk_live" / "byund_pk_test"
-  last4  String
-
-  // optional for later (fine empty for V2 initial)
-  scopes String[] @default([])
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  revokedAt DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  revokedAt   DateTime?
 
   @@index([merchantId, environment])
   @@index([merchantId, type])
@@ -205,28 +173,25 @@ enum WebhookDeliveryStatus {
 }
 
 model WebhookEndpoint {
-  id String @id @default(cuid())
+  id                  String                 @id @default(cuid())
+  merchantId           String
+  merchant             Merchant              @relation(fields: [merchantId], references: [id], onDelete: Cascade)
 
-  merchantId String
-  merchant   Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  environment          DashboardMode         @default(TEST)
 
-  environment DashboardMode @default(TEST)
+  url                 String
+  description         String?
 
-  url         String
-  description String?
+  signingSecretHash   String
+  signingSecretLast4  String
 
-  // Store only hash; reveal raw only once at creation time
-  signingSecretHash  String
-  signingSecretLast4 String
+  isActive            Boolean                @default(true)
 
-  isActive Boolean @default(true)
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Join-table for subscribed events (most reliable across tooling)
-  events     WebhookEndpointEvent[]
-  deliveries WebhookDelivery[]
+  events              WebhookEndpointEvent[]
+  deliveries          WebhookDelivery[]
 
   @@index([merchantId, environment])
   @@index([isActive])
@@ -236,36 +201,33 @@ model WebhookEndpointEvent {
   endpointId String
   endpoint   WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
 
-  eventType WebhookEventType
-
-  createdAt DateTime @default(now())
+  eventType  WebhookEventType
+  createdAt  DateTime        @default(now())
 
   @@id([endpointId, eventType])
   @@index([eventType])
 }
 
 model WebhookDelivery {
-  id String @id @default(cuid())
+  id            String               @id @default(cuid())
+  endpointId    String
+  endpoint      WebhookEndpoint      @relation(fields: [endpointId], references: [id], onDelete: Cascade)
 
-  endpointId String
-  endpoint   WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+  eventType     WebhookEventType
+  eventId       String
+  payload       Json
 
-  eventType WebhookEventType
-  eventId   String // idempotency per endpoint
-
-  payload Json
-
-  status       WebhookDeliveryStatus @default(PENDING)
-  attemptCount Int                   @default(0)
+  status        WebhookDeliveryStatus @default(PENDING)
+  attemptCount  Int                   @default(0)
 
   lastAttemptAt DateTime?
   nextAttemptAt DateTime?
 
-  httpStatus   Int?
-  responseBody String?
+  httpStatus    Int?
+  responseBody  String?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
 
   @@unique([endpointId, eventId])
   @@index([endpointId, createdAt])

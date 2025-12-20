@@ -12,15 +12,11 @@ import React, {
 } from "react";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
-import { ToastProvider, useToast } from "@/components/ui/Toast";
-
-type Mode = "TEST" | "LIVE";
+import { useToast } from "@/components/ui/Toast";
 
 type DashboardContextValue = {
-  mode: Mode;
-  isModeHydrated: boolean;
-  setMode: (next: Mode) => Promise<void>;
   profile: { name: string; email: string } | null;
+  isHydrated: boolean;
   isLoggingOut: boolean;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -37,10 +33,8 @@ export function useDashboard() {
 function ShellInner({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
-  const [mode, setModeState] = useState<Mode>("TEST");
-  const [isModeHydrated, setIsModeHydrated] = useState(false);
-
   const [profile, setProfile] = useState<{ name: string; email: string } | null>(null);
+  const [isHydrated, setIsHydrated] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const refresh = useCallback(async () => {
@@ -55,9 +49,6 @@ function ShellInner({ children }: { children: ReactNode }) {
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error("Failed");
 
-      const nextMode: Mode = data.mode === "LIVE" ? "LIVE" : "TEST";
-      setModeState(nextMode);
-
       if (data.profile?.email) {
         setProfile({
           name: String(data.profile.name ?? "Merchant"),
@@ -69,54 +60,13 @@ function ShellInner({ children }: { children: ReactNode }) {
     } catch {
       // soft-fail: server guards still protect pages
     } finally {
-      setIsModeHydrated(true);
+      setIsHydrated(true);
     }
   }, []);
 
   useEffect(() => {
     refresh();
   }, [refresh]);
-
-  const setMode = useCallback(
-    async (next: Mode) => {
-      if (next === mode) return;
-
-      const prev = mode;
-      setModeState(next);
-
-      toast({
-        title: "Mode updated",
-        variant: next === "LIVE" ? "warning" : "default",
-        message:
-          next === "TEST"
-            ? "Test mode: payments won’t move real funds."
-            : "Live mode: payments will settle to your wallet.",
-      });
-
-      try {
-        const res = await fetch("/api/dashboard/mode", {
-          method: "POST",
-          credentials: "same-origin",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ mode: next }),
-          cache: "no-store",
-        });
-
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok || !data?.ok) throw new Error(data?.error ?? "Failed");
-
-        setModeState(data.mode === "LIVE" ? "LIVE" : "TEST");
-      } catch {
-        setModeState(prev);
-        toast({
-          title: "Couldn’t update mode",
-          variant: "error",
-          message: "Please try again. If this keeps happening, check your connection.",
-        });
-      }
-    },
-    [mode, toast]
-  );
 
   const logout = useCallback(async () => {
     if (isLoggingOut) return;
@@ -133,44 +83,26 @@ function ShellInner({ children }: { children: ReactNode }) {
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error("Logout failed");
 
-      // Clear client state immediately (snappy UX)
       setProfile(null);
-      setModeState("TEST");
-
-      // Hard redirect ensures no cached dashboard UI hangs around
       window.location.assign("/signin");
     } catch {
       setIsLoggingOut(false);
-      toast({
-        title: "Logout failed",
-        variant: "error",
-        message: "Try again.",
-      });
+      toast({ title: "Logout failed", variant: "error", message: "Try again." });
     }
   }, [toast, isLoggingOut]);
 
   const value = useMemo<DashboardContextValue>(
-    () => ({
-      mode,
-      isModeHydrated,
-      setMode,
-      profile,
-      isLoggingOut,
-      logout,
-      refresh,
-    }),
-    [mode, isModeHydrated, setMode, profile, isLoggingOut, logout, refresh]
+    () => ({ profile, isHydrated, isLoggingOut, logout, refresh }),
+    [profile, isHydrated, isLoggingOut, logout, refresh]
   );
 
   return (
     <DashboardContext.Provider value={value}>
       <div className="min-h-screen bg-surface text-foreground">
         <div className="flex min-h-screen">
-          <Sidebar mode={mode === "LIVE" ? "live" : "test"} />
-
+          <Sidebar />
           <div className="flex min-h-screen flex-1 flex-col">
             <Topbar />
-
             <main className="flex-1 px-4 pb-10 pt-4 md:px-6 md:pt-6 lg:px-8">
               {children}
             </main>
@@ -182,9 +114,5 @@ function ShellInner({ children }: { children: ReactNode }) {
 }
 
 export default function DashboardShell({ children }: { children: ReactNode }) {
-  return (
-    <ToastProvider>
-      <ShellInner>{children}</ShellInner>
-    </ToastProvider>
-  );
+  return <ShellInner>{children}</ShellInner>;
 }

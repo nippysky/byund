@@ -9,36 +9,36 @@ export async function GET() {
   const auth = await requireApiAuth();
   if (!auth.ok) return auth.res;
 
-  // We need merchant info for mode + profile display
   const user = await prisma.user.findUnique({
     where: { id: auth.userId },
     select: {
+      id: true,
       email: true,
       merchant: {
         select: {
+          id: true,
           publicName: true,
-          dashboardMode: true,
+          settlementWallet: true, // useful for onboarding gating
         },
       },
     },
   });
 
   if (!user || !user.merchant) {
-    return NextResponse.json(
-      { ok: false, error: "Merchant profile not found" },
-      { status: 400 }
-    );
+    return NextResponse.json({ ok: false, error: "Merchant profile not found" }, { status: 400 });
   }
 
   const res = NextResponse.json({
     ok: true,
-    mode: user.merchant.dashboardMode, // "TEST" | "LIVE"
+    merchantId: user.merchant.id,
     profile: {
       name: user.merchant.publicName,
       email: user.email,
     },
+    // UI can gently nudge onboarding based on this
+    isOnboarded: Boolean(user.merchant.settlementWallet),
   });
 
-  res.headers.set("Cache-Control", "no-store");
+  res.headers.set("Cache-Control", "no-store, max-age=0");
   return res;
 }

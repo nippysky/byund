@@ -8,6 +8,9 @@ import { prisma } from "@/lib/db";
 import { requireAuth } from "@/lib/auth/require-auth";
 import BrandingSettingsCard from "@/components/dashboard/settings/BrandingSettingsCard";
 
+const BYUND_BLUE = "#0066ff";
+const BYUND_WHITE = "#ffffff";
+
 export default async function BrandingSettingsPage() {
   noStore();
 
@@ -45,8 +48,8 @@ export default async function BrandingSettingsPage() {
 
       <BrandingSettingsCard
         initial={{
-          brandBg: merchant?.brandBg ?? "#EAF2FF",
-          brandText: merchant?.brandText ?? "#0B1220",
+          brandBg: merchant?.brandBg ?? BYUND_BLUE,
+          brandText: merchant?.brandText ?? BYUND_WHITE,
         }}
       />
     </div>
