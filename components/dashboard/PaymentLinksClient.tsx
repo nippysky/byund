@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, Copy, ReceiptText, Loader2 } from "lucide-react";
+import { Eye, Copy, ReceiptText, Loader2, FlaskConical } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { CreatePaymentLinkButton } from "./CreatePaymentLinkButton";
@@ -124,8 +124,8 @@ function StatusSwitch({
       disabled={isDisabled}
       title={checked ? "Disable link" : "Enable link"}
       className={[
-        "group inline-flex items-center gap-2 select-none",
-        isDisabled ? "opacity-70 cursor-wait" : "cursor-pointer",
+        "group inline-flex select-none items-center gap-2",
+        isDisabled ? "cursor-wait opacity-70" : "cursor-pointer",
       ].join(" ")}
     >
       <span
@@ -154,6 +154,17 @@ function StatusSwitch({
   );
 }
 
+const TEST_LINK_NAME = "Test payment ($1)";
+
+function isTestLink(l: LinkRow) {
+  // V1 heuristic (robust enough without schema changes):
+  // - name contains "test payment"
+  // - fixed $1.00
+  const nameOk = l.name.toLowerCase().includes("test payment");
+  const amountOk = l.mode === "FIXED" && l.fixedAmountCents === 100;
+  return nameOk && amountOk;
+}
+
 export default function PaymentLinksClient({
   env,
   initialLinks,
@@ -174,10 +185,16 @@ export default function PaymentLinksClient({
   const handledCreatedIdsRef = useRef<Set<string>>(new Set());
   const togglingRef = useRef<Set<string>>(new Set());
   const [, forceRerender] = useState(0);
+
+  const [creatingTest, setCreatingTest] = useState(false);
+
   const isToggling = (publicId: string) => togglingRef.current.has(publicId);
 
   const hasLinks = links.length > 0;
   const totalActive = useMemo(() => links.filter((l) => l.isActive).length, [links]);
+
+  const testLinks = useMemo(() => links.filter(isTestLink), [links]);
+  const latestTestLink = useMemo(() => testLinks[0] ?? null, [testLinks]);
 
   function handleCreated(created: CreatedLinkLike) {
     const row = normalizeCreatedLink(created);
@@ -203,7 +220,7 @@ export default function PaymentLinksClient({
     return absUrl(`/pay/${link.publicId}`);
   }
 
-  function openPay(link: LinkRow) {
+  function previewCheckout(link: LinkRow) {
     if (typeof window === "undefined") return;
     window.open(getPublicPayUrl(link), "_blank", "noopener,noreferrer");
   }
@@ -211,7 +228,6 @@ export default function PaymentLinksClient({
   async function handleCopy(link: LinkRow) {
     try {
       if (typeof window === "undefined") return;
-
       const url = getPublicPayUrl(link);
 
       if (navigator?.clipboard?.writeText) {
@@ -281,16 +297,74 @@ export default function PaymentLinksClient({
     }
   }
 
+  async function createTestLink() {
+    if (!canCreate) {
+      toast({
+        title: "Finish setup first",
+        variant: "warning",
+        message: "Add your settlement wallet before creating links.",
+      });
+      return;
+    }
+    if (creatingTest) return;
+
+    setCreatingTest(true);
+    try {
+      const payload = {
+        name: TEST_LINK_NAME,
+        mode: "FIXED",
+        amount: "1", // USD
+        description: "Use this to preview your checkout flow.",
+        isActive: true,
+      };
+
+      const res = await fetch("/api/payment-links", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify(payload),
+        cache: "no-store",
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.ok) throw new Error(data?.error ?? "Failed to create test link");
+
+      const created = data.link as CreatedLinkLike;
+      const row = normalizeCreatedLink(created);
+
+      setLinks((prev) => {
+        if (prev.some((p) => p.publicId === row.publicId)) return prev;
+        return [row, ...prev];
+      });
+
+      toast({
+        title: "Test link created",
+        variant: "success",
+        message: "Preview it to confirm your checkout experience.",
+      });
+
+      startTransition(() => router.refresh());
+    } catch (e) {
+      toast({
+        title: "Couldn’t create test link",
+        variant: "error",
+        message: e instanceof Error ? e.message : "Try again.",
+      });
+    } finally {
+      setCreatingTest(false);
+    }
+  }
+
   return (
     <div className="space-y-4">
-      {/* Wallet-required callout */}
+      {/* ✅ Wallet-required callout */}
       {!canCreate ? (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm">
-          <p className="font-medium text-amber-900 tracking-[-0.01em]">
+          <p className="font-medium tracking-[-0.01em] text-amber-900">
             Finish setup to create payment links
           </p>
           <p className="mt-1 text-[13px] text-amber-900/80">
-            Add your settlement wallet first — BYUND settles USDC on Base directly to it.
+            Add your settlement wallet first — BYUND settles to it.
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <Link href={onboardingHref}>
@@ -318,13 +392,54 @@ export default function PaymentLinksClient({
             <span className="font-medium text-foreground">{env === "LIVE" ? "Live" : "Test"}</span>{" "}
             mode
           </span>
+
+          {/* microcopy + quick action */}
+          {canCreate ? (
+            <span className="hidden items-center gap-2 rounded-full border border-border bg-white px-2 py-1 md:inline-flex">
+              <span className="text-muted">Test with a small amount</span>
+              <button
+                type="button"
+                onClick={createTestLink}
+                disabled={creatingTest}
+                className="inline-flex items-center gap-1 rounded-full bg-surface px-2 py-0.5 text-[11px] font-medium text-foreground/80 hover:bg-white disabled:opacity-60"
+                title="Create a $1 test link"
+              >
+                {creatingTest ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FlaskConical className="h-3.5 w-3.5" />}
+                Create $1 test link
+              </button>
+            </span>
+          ) : null}
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button variant="secondary" size="sm" className="hidden md:inline-flex">
-            View docs
-          </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Preview / New test link actions (only after at least one test link exists) */}
+          {canCreate && latestTestLink ? (
+            <>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => previewCheckout(latestTestLink)}
+                className="inline-flex items-center gap-2"
+              >
+                <Eye className="h-4 w-4" />
+                Preview test link
+              </Button>
 
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={createTestLink}
+                disabled={creatingTest}
+                className="inline-flex items-center gap-2"
+                title="Create another $1 test link"
+              >
+                {creatingTest ? <Loader2 className="h-4 w-4 animate-spin" /> : <FlaskConical className="h-4 w-4" />}
+                New test link
+              </Button>
+            </>
+          ) : null}
+
+          {/* Create link */}
           {canCreate ? (
             <CreatePaymentLinkButton size="sm" onCreated={handleCreated} />
           ) : (
@@ -374,10 +489,10 @@ export default function PaymentLinksClient({
                       <button
                         type="button"
                         className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-3 py-1.5 text-[11px] text-muted hover:bg-white hover:text-foreground"
-                        onClick={() => openPay(link)}
+                        onClick={() => previewCheckout(link)}
                       >
                         <Eye className="h-3.5 w-3.5" />
-                        Open
+                        Preview
                       </button>
 
                       <button
@@ -430,7 +545,7 @@ export default function PaymentLinksClient({
                           (isLast ? "" : "border-b border-border/60")
                         }
                       >
-                        <td className="max-w-[320px] px-4 py-3 align-top">
+                        <td className="max-w-90 px-4 py-3 align-top">
                           <div className="space-y-0.5">
                             <p className="truncate text-[13px] font-medium tracking-[-0.01em]">
                               {link.name}
@@ -469,10 +584,10 @@ export default function PaymentLinksClient({
                             <button
                               type="button"
                               className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2 py-1 text-[11px] text-muted hover:bg-white hover:text-foreground"
-                              onClick={() => openPay(link)}
+                              onClick={() => previewCheckout(link)}
                             >
                               <Eye className="h-3.5 w-3.5" />
-                              <span className="hidden sm:inline">Open</span>
+                              <span className="hidden sm:inline">Preview</span>
                             </button>
 
                             <button
@@ -501,7 +616,12 @@ export default function PaymentLinksClient({
               </table>
 
               <div className="flex items-center justify-end gap-2 border-t border-border px-4 py-2 text-[11px] text-muted">
-                <span className={"h-1.5 w-1.5 rounded-full " + (isPending ? "bg-amber-400" : "bg-emerald-500")} />
+                <span
+                  className={
+                    "h-1.5 w-1.5 rounded-full " +
+                    (isPending ? "bg-amber-400" : "bg-emerald-500")
+                  }
+                />
                 <span>{isPending ? "Syncing…" : "Up to date"}</span>
               </div>
             </div>
@@ -510,13 +630,25 @@ export default function PaymentLinksClient({
           <div className="px-5 py-8 text-sm">
             <p className="font-medium tracking-[-0.01em]">No payment links yet</p>
             <p className="mt-2 text-sm text-muted">
-              Create your first link. Your dashboard is currently in{" "}
-              <span className="font-medium">{env === "LIVE" ? "Live" : "Test"}</span> mode.
+              Start with a tiny test link to preview your checkout, then create your real invoice links.
             </p>
 
-            <div className="mt-4">
+            <div className="mt-4 flex flex-wrap items-center gap-2">
               {canCreate ? (
-                <CreatePaymentLinkButton size="sm" onCreated={handleCreated} />
+                <>
+                  <Button size="sm" variant={"ghost"} onClick={createTestLink} disabled={creatingTest}>
+                    <span className="inline-flex items-center gap-2">
+                      {creatingTest ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <FlaskConical className="h-4 w-4" />
+                      )}
+                      Create $1 test link
+                    </span>
+                  </Button>
+
+                  <CreatePaymentLinkButton size="sm" onCreated={handleCreated} />
+                </>
               ) : (
                 <Link href={onboardingHref}>
                   <Button size="sm">Complete setup</Button>
@@ -527,17 +659,8 @@ export default function PaymentLinksClient({
         )}
       </div>
 
-      {/* ✅ Replaces the “analytics coming soon” block */}
-      <div className="flex flex-col items-start justify-between gap-3 rounded-2xl border border-border bg-white px-4 py-4 text-xs text-muted md:flex-row md:items-center">
-        <p>
-          Tip: use <span className="font-medium text-foreground">Activity</span> to see recent payments and link events.
-        </p>
-        <Link href="/dashboard/activity">
-          <Button size="sm" variant="secondary">
-            Open activity
-          </Button>
-        </Link>
-      </div>
+      {/* ✅ Remove/avoid the "Per-link analytics (coming soon)" filler.
+          You already have Activity + per-link Payments view, so this becomes noise in V1. */}
     </div>
   );
 }

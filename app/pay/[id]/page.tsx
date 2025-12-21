@@ -1,8 +1,9 @@
-// app/pay/[id]/page.tsx
-import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import PayPageClient from "@/components/shared/PayPageClient";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export type PayPageLink = {
   publicId: string;
@@ -18,7 +19,6 @@ export type PayPageLink = {
   brandBg: string;
   brandText: string;
 
-  // ✅ new
   isActive: boolean;
 };
 
@@ -56,33 +56,30 @@ export async function generateMetadata({
     return { title: "Checkout • BYUND", robots: { index: false, follow: false } };
   }
 
-  // ✅ Inactive: keep it unindexed, but show a real page
-  if (!link.isActive) {
-    return {
-      title: "Link unavailable • BYUND",
-      robots: { index: false, follow: false },
-    };
-  }
-
   const merchant = link.merchant.publicName;
   const paymentName = link.name;
 
   const title = `Pay ${merchant} • ${paymentName}`;
-  const description =
-    link.description?.slice(0, 155) || `Complete a secure checkout to ${merchant}.`;
+  const description = link.description?.slice(0, 155) || `Complete a secure checkout to ${merchant}.`;
 
   return { title, description, openGraph: { title, description } };
 }
 
-export default async function PayPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function PayPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: publicId } = await params;
 
   const link = await getLink(publicId);
-  if (!link) return notFound();
+  if (!link) {
+    // still 404 for truly missing link
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center px-6">
+        <div className="max-w-md w-full rounded-2xl border border-border bg-white p-6 text-center">
+          <p className="text-sm font-semibold">Link not found</p>
+          <p className="mt-2 text-sm text-muted">This payment link doesn’t exist.</p>
+        </div>
+      </div>
+    );
+  }
 
   const payload: PayPageLink = {
     publicId: link.publicId,
@@ -94,7 +91,7 @@ export default async function PayPage({
     fixedAmountCents: link.fixedAmountCents ?? null,
     brandBg: link.merchant.brandBg,
     brandText: link.merchant.brandText,
-    isActive: Boolean(link.isActive),
+    isActive: link.isActive,
   };
 
   return <PayPageClient link={payload} currentYear={new Date().getFullYear()} />;

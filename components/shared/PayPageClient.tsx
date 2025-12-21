@@ -1,8 +1,8 @@
-// components/shared/PayPageClient.tsx
 "use client";
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 
 export type PayPageLink = {
@@ -19,7 +19,7 @@ export type PayPageLink = {
   brandBg: string;
   brandText: string;
 
-  // ✅ so we can show a branded "unavailable" state instead of 404
+  // ✅ allow branded inactive view
   isActive: boolean;
 };
 
@@ -91,7 +91,6 @@ function hexToRgb(hex: string) {
   const b = parseInt(h.slice(4, 6), 16);
   return { r, g, b };
 }
-
 function luminance(hex: string) {
   const { r, g, b } = hexToRgb(hex);
   const srgb = [r, g, b].map((v) => {
@@ -100,7 +99,6 @@ function luminance(hex: string) {
   });
   return 0.2126 * srgb[0] + 0.7152 * srgb[1] + 0.0722 * srgb[2];
 }
-
 function contrastRatio(a: string, b: string) {
   const L1 = luminance(a);
   const L2 = luminance(b);
@@ -109,12 +107,6 @@ function contrastRatio(a: string, b: string) {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
-/**
- * ✅ Brand resolution:
- * - default BYUND blue/white
- * - merchant overrides only if valid hex
- * - enforce legible text on chosen background
- */
 function resolveBrand(brandBg: unknown, brandText: unknown) {
   const bg = isHexColor(brandBg) ? brandBg : BYUND_BLUE;
   const textRaw = isHexColor(brandText) ? brandText : BYUND_WHITE;
@@ -132,14 +124,12 @@ function resolveBrand(brandBg: unknown, brandText: unknown) {
 }
 
 export default function PayPageClient({ link, currentYear }: Props) {
+  const router = useRouter();
   const [variableAmount, setVariableAmount] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const brand = useMemo(
-    () => resolveBrand(link.brandBg, link.brandText),
-    [link.brandBg, link.brandText]
-  );
-
+  const brand = useMemo(() => resolveBrand(link.brandBg, link.brandText), [link.brandBg, link.brandText]);
   const isVariable = link.mode === "variable";
 
   const amountState = useMemo(() => {
@@ -153,24 +143,10 @@ export default function PayPageClient({ link, currentYear }: Props) {
 
   const amountCents = amountState.cents;
   const hasValidAmount = typeof amountCents === "number" && amountCents > 0;
-  const canSubmit = hasValidAmount && !isSubmitting;
+  const canSubmit = link.isActive && hasValidAmount && !isSubmitting;
 
   const amountPretty = hasValidAmount ? usdCentsToPretty(amountCents!) : "0.00";
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!hasValidAmount || !amountCents) return;
-
-    setIsSubmitting(true);
-    try {
-      // TODO: call your checkout/session API
-      await new Promise((r) => setTimeout(r, 650));
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
-  // subtle pill styling for either light/dark brand
   const pillStyle = brand.isTextLight
     ? {
         backgroundColor: "rgba(255,255,255,0.16)",
@@ -183,17 +159,48 @@ export default function PayPageClient({ link, currentYear }: Props) {
         color: "rgba(0,0,0,0.78)",
       };
 
-  // ✅ Branded "unavailable" state for inactive links (instead of generic 404)
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitError(null);
+
+    if (!link.isActive) return;
+    if (!hasValidAmount || !amountCents) return;
+
+    setIsSubmitting(true);
+    try {
+      const res = await fetch("/api/public/payments/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+        body: JSON.stringify({
+          publicId: link.publicId,
+          amountUsdCents: amountCents,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error ?? "Couldn’t start payment.");
+      }
+
+      const redirectTo = data.redirectTo as string;
+      router.push(redirectTo);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "Couldn’t start payment.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  // ✅ Inactive experience (branded, not a 404)
   if (!link.isActive) {
     return (
       <div className="min-h-screen bg-white">
         <div className="grid min-h-screen grid-cols-1 lg:grid-cols-2">
-          {/* LEFT: brand panel */}
           <section
             className="relative flex min-h-[44vh] flex-col overflow-hidden p-6 lg:min-h-screen lg:p-10"
             style={{ backgroundColor: brand.bg, color: brand.text }}
           >
-            {/* micro grid */}
             <div
               aria-hidden="true"
               className="pointer-events-none absolute inset-0"
@@ -205,39 +212,16 @@ export default function PayPageClient({ link, currentYear }: Props) {
                 backgroundPosition: "center",
               }}
             />
-            {/* bloom */}
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-0"
-              style={{
-                opacity: 0.22,
-                background:
-                  "radial-gradient(900px 700px at 22% 30%, rgba(255,255,255,0.32), transparent 60%), radial-gradient(700px 520px at 72% 68%, rgba(0,0,0,0.18), transparent 55%)",
-              }}
-            />
-
             <div className="relative flex flex-1 flex-col justify-center">
               <div className="mx-auto w-full max-w-xl">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="leading-tight">
-                    <p className="text-[11px] uppercase tracking-[0.22em] opacity-75">Payment to</p>
-                    <p className="text-[18px] font-semibold tracking-[-0.03em]">{link.merchantName}</p>
-                  </div>
-
-                  <span
-                    className="inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-medium backdrop-blur"
-                    style={pillStyle}
-                  >
-                    USDC on Base
-                  </span>
-                </div>
+                <p className="text-[11px] uppercase tracking-[0.22em] opacity-75">Payment to</p>
+                <p className="mt-1 text-[18px] font-semibold tracking-[-0.03em]">{link.merchantName}</p>
 
                 <div className="mt-10">
                   <p className="text-[12px] uppercase tracking-[0.22em] opacity-75">For</p>
                   <h1 className="mt-2 text-[28px] font-semibold leading-tight tracking-[-0.04em] lg:text-[34px]">
                     {link.linkName}
                   </h1>
-
                   {link.description ? (
                     <p className="mt-3 text-[13px] opacity-85 lg:text-[14px]">{link.description}</p>
                   ) : null}
@@ -246,36 +230,21 @@ export default function PayPageClient({ link, currentYear }: Props) {
             </div>
           </section>
 
-          {/* RIGHT: message card */}
           <section className="flex min-h-[56vh] flex-col items-center justify-center bg-white p-6 lg:min-h-screen lg:p-10">
             <div className="w-full max-w-md">
               <div className="rounded-3xl border border-border bg-white p-6 shadow-[0_16px_50px_rgba(15,17,21,0.07)] lg:p-7">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">
-                  Link unavailable
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Unavailable</p>
+                <p className="mt-2 text-[18px] font-semibold tracking-[-0.02em] text-foreground">
+                  This payment link is inactive
+                </p>
+                <p className="mt-1 text-sm text-muted">
+                  The merchant has paused this link. If you believe this is a mistake, contact them for an updated link.
                 </p>
 
-                <h2 className="mt-2 text-[18px] font-semibold tracking-[-0.02em] text-foreground">
-                  This payment link isn’t accepting payments right now.
-                </h2>
-
-                <p className="mt-2 text-[13px] text-muted">
-                  Ask {link.merchantName} for an updated link, or try again later.
-                </p>
-
-                <div className="mt-5 flex flex-col gap-2">
-                  <Button
-                    className="w-full justify-center rounded-2xl py-3.5 text-[13px] font-semibold"
-                    style={{ backgroundColor: brand.bg, color: brand.text }}
-                    onClick={() => {
-                      if (typeof window !== "undefined") window.location.reload();
-                    }}
-                  >
-                    Refresh
-                  </Button>
-
-                  <Link href="/" className="w-full">
-                    <Button variant="secondary" className="w-full justify-center">
-                      Return to BYUND
+                <div className="mt-5">
+                  <Link href="/" className="block">
+                    <Button className="w-full justify-center" variant="secondary">
+                      Go to BYUND
                     </Button>
                   </Link>
                 </div>
@@ -302,12 +271,10 @@ export default function PayPageClient({ link, currentYear }: Props) {
   return (
     <div className="min-h-screen bg-white">
       <div className="grid min-h-screen grid-cols-1 lg:grid-cols-2">
-        {/* LEFT: brand panel */}
         <section
           className="relative flex min-h-[44vh] flex-col overflow-hidden p-6 lg:min-h-screen lg:p-10"
           style={{ backgroundColor: brand.bg, color: brand.text }}
         >
-          {/* micro grid */}
           <div
             aria-hidden="true"
             className="pointer-events-none absolute inset-0"
@@ -319,7 +286,6 @@ export default function PayPageClient({ link, currentYear }: Props) {
               backgroundPosition: "center",
             }}
           />
-          {/* bloom */}
           <div
             aria-hidden="true"
             className="pointer-events-none absolute inset-0"
@@ -360,15 +326,11 @@ export default function PayPageClient({ link, currentYear }: Props) {
           </div>
         </section>
 
-        {/* RIGHT: checkout */}
         <section className="flex min-h-[56vh] flex-col items-center justify-center bg-white p-6 lg:min-h-screen lg:p-10">
           <div className="w-full max-w-md">
             <div className="rounded-3xl border border-border bg-white p-6 shadow-[0_16px_50px_rgba(15,17,21,0.07)] lg:p-7">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">
-                Amount
-              </p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Amount</p>
 
-              {/* calm amount */}
               <div className="mt-3 flex items-baseline justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex items-baseline gap-2">
@@ -399,6 +361,7 @@ export default function PayPageClient({ link, currentYear }: Props) {
                         placeholder="0.00"
                         value={variableAmount}
                         onChange={(e) => setVariableAmount(normalizeMoneyInput(e.target.value))}
+                        disabled={isSubmitting}
                       />
                     </div>
 
@@ -416,15 +379,15 @@ export default function PayPageClient({ link, currentYear }: Props) {
                   <p className="text-[11px] text-[#ef4444]">{amountState.reason}</p>
                 ) : null}
 
-                {/* Pay button is the hero */}
+                {submitError ? (
+                  <p className="text-[11px] text-[#ef4444]">{submitError}</p>
+                ) : null}
+
                 <Button
                   type="submit"
                   className="w-full justify-center rounded-2xl py-3.5 text-[13px] font-semibold shadow-[0_10px_28px_rgba(0,0,0,0.10)]"
                   disabled={!canSubmit}
-                  style={{
-                    backgroundColor: brand.bg,
-                    color: brand.text,
-                  }}
+                  style={{ backgroundColor: brand.bg, color: brand.text }}
                 >
                   {isSubmitting ? "Processing…" : "Pay now"}
                 </Button>
