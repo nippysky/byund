@@ -96,7 +96,7 @@ export function SignInForm({ nextPath }: { nextPath: string }) {
           <label htmlFor="password" className="text-sm font-medium text-foreground">
             Password
           </label>
-          <Link href="#" className="text-action text-xs">
+          <Link href="forgot-password" className="text-action text-xs">
             Forgot password?
           </Link>
         </div>
