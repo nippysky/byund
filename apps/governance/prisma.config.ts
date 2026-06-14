@@ -8,13 +8,14 @@ import { config as dotenvConfig } from "dotenv";
 dotenvConfig({ path: ".env.local" });
 
 export default defineConfig({
+  // @ts-expect-error earlyAccess is a Prisma CLI flag not yet in the TS types
   earlyAccess: true,
   schema: path.join("prisma", "schema.prisma"),
   datasource: {
     url: process.env.DATABASE_URL!,
   },
   migrate: {
-    async adapter(env) {
+    async adapter(env: { DATABASE_URL: string }) {
       const pool = new Pool({
         connectionString: env.DATABASE_URL,
         ssl: { rejectUnauthorized: false },

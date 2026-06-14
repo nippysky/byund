@@ -18,7 +18,8 @@ export async function writeAuditLog(params: {
         targetType:   params.targetType ?? null,
         targetId:     params.targetId ?? null,
         targetLabel:  params.targetLabel ?? null,
-        metadata:     params.metadata ?? null,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        metadata:     (params.metadata ?? undefined) as any,
       },
     });
   } catch {

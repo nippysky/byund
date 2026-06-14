@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { createSession, setSessionCookie } from "@/lib/auth";
 import { writeAuditLog } from "@/lib/audit";
+
+// Derive the transaction client type from the prisma instance (Prisma 7 compatible)
+type TX = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
 
 export async function POST(req: NextRequest) {
   try {
@@ -23,7 +25,7 @@ export async function POST(req: NextRequest) {
     const slug = workspaceName.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")
       + "-" + Date.now().toString(36);
 
-    const { user, workspace } = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    const { user, workspace } = await prisma.$transaction(async (tx: TX) => {
       const user = await tx.user.create({ data: { name, email, passwordHash } });
       const workspace = await tx.workspace.create({
         data: {
