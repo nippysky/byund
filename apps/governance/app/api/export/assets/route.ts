@@ -12,7 +12,7 @@ export async function GET() {
     orderBy: { createdAt: "desc" },
   });
 
-  const rows = assets.map(a => ({
+  const rows = assets.map((a: (typeof assets)[number]) => ({
     "Name":            a.name,
     "Type":            a.type.replace(/_/g, " "),
     "Criticality":     a.criticality,
@@ -26,7 +26,7 @@ export async function GET() {
 
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.json_to_sheet(rows);
-  ws["!cols"] = [20,14,12,14,30,14,14,14,14].map(w => ({ wch: w }));
+  ws["!cols"] = [20,14,12,14,30,14,14,14,14].map((w: number) => ({ wch: w }));
   XLSX.utils.book_append_sheet(wb, ws, "Assets");
 
   const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });

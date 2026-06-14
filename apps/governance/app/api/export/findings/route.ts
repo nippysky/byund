@@ -16,7 +16,7 @@ export async function GET() {
     orderBy: [{ status: "asc" }, { severity: "desc" }],
   });
 
-  const rows = findings.map(f => ({
+  const rows = findings.map((f: (typeof findings)[number]) => ({
     "Title":       f.title,
     "Severity":    f.severity,
     "Status":      f.status.replace(/_/g, " "),
@@ -30,7 +30,7 @@ export async function GET() {
 
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.json_to_sheet(rows);
-  ws["!cols"] = [30,10,14,18,16,40,40,14,14].map(w => ({ wch: w }));
+  ws["!cols"] = [30,10,14,18,16,40,40,14,14].map((w: number) => ({ wch: w }));
   XLSX.utils.book_append_sheet(wb, ws, "Findings");
 
   const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
