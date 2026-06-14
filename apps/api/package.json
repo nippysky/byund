@@ -11,7 +11,6 @@
     "test": "jest"
   },
   "dependencies": {
-    "@byund/types": "workspace:*",
     "@fastify/cookie": "^11.0.2",
     "@nestjs/common": "^11.0.0",
     "@nestjs/core": "^11.0.0",
@@ -33,7 +32,6 @@
     "rxjs": "^7.8.1"
   },
   "devDependencies": {
-    "@byund/config": "workspace:*",
     "@nestjs/cli": "^11.0.0",
     "@nestjs/testing": "^11.0.0",
     "@types/node": "^20",
