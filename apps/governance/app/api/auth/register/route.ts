@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { createSession, setSessionCookie } from "@/lib/auth";
 import { writeAuditLog } from "@/lib/audit";
@@ -22,7 +23,7 @@ export async function POST(req: NextRequest) {
     const slug = workspaceName.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")
       + "-" + Date.now().toString(36);
 
-    const { user, workspace } = await prisma.$transaction(async (tx) => {
+    const { user, workspace } = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const user = await tx.user.create({ data: { name, email, passwordHash } });
       const workspace = await tx.workspace.create({
         data: {
