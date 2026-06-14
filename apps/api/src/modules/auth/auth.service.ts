@@ -5,6 +5,7 @@ import {
 import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
 import * as argon2 from "argon2";
+import * as bcryptjs from "bcryptjs";
 import { PrismaService } from "../../common/prisma.service";
 import type { RegisterDto } from "./dto/register.dto";
 import type { LoginDto } from "./dto/login.dto";
@@ -95,8 +96,28 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (!user) throw new UnauthorizedException("Invalid email or password");
 
-    const valid = await argon2.verify(user.passwordHash, dto.password);
+    // Try argon2 first (NestJS-registered users), fall back to bcrypt (legacy governance users)
+    let valid = false;
+    let needsRehash = false;
+
+    if (user.passwordHash.startsWith("$argon2")) {
+      valid = await argon2.verify(user.passwordHash, dto.password);
+    } else {
+      // bcrypt hash — legacy user registered via governance app before SSO migration
+      valid = await bcryptjs.compare(dto.password, user.passwordHash);
+      if (valid) needsRehash = true;
+    }
+
     if (!valid) throw new UnauthorizedException("Invalid email or password");
+
+    // Transparently migrate bcrypt → argon2id on first successful SSO login
+    if (needsRehash) {
+      const newHash = await argon2.hash(dto.password, {
+        type: argon2.argon2id, memoryCost: 65_536, timeCost: 3, parallelism: 1,
+      });
+      await this.prisma.user.update({ where: { id: user.id }, data: { passwordHash: newHash } });
+      this.logger.log(`Migrated password hash: bcrypt → argon2id for ${user.email}`);
+    }
 
     // Return the user's primary workspace (their OWNER workspace, or first joined)
     const member = await this.prisma.workspaceMember.findFirst({

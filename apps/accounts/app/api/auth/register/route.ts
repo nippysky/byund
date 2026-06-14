@@ -1,18 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { setSessionCookie } from "@/lib/auth";
+import { buildPostAuthRedirect } from "@/lib/redirect";
 
 /**
  * POST /api/auth/register
  *
- * Delegates to the NestJS SSO API — single source of truth for account creation.
- * New accounts are always created with argon2id hashes in the central auth service.
- *
- * The NestJS API creates user + workspace + audit log in a single transaction,
- * signs a JWT, and returns { token, user, workspace, role }.
+ * Central SSO registration. Creates account via NestJS auth service,
+ * sets byund_session cookie, returns redirect URL for cross-domain handoff.
  */
 export async function POST(req: NextRequest) {
   try {
-    const { name, email, password, workspaceName } = await req.json();
+    const { name, email, password, workspaceName, next } = await req.json();
 
     if (!name || !email || !password || !workspaceName) {
       return NextResponse.json({ error: "All fields are required" }, { status: 400 });
@@ -23,7 +21,7 @@ export async function POST(req: NextRequest) {
 
     const apiUrl = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL;
     if (!apiUrl) {
-      console.error("[register] API_URL / NEXT_PUBLIC_API_URL is not set");
+      console.error("[accounts/register] API_URL is not configured");
       return NextResponse.json({ error: "Auth service unavailable" }, { status: 503 });
     }
 
@@ -42,16 +40,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const host = req.headers.get("host") ?? "";
+    const redirectTo = buildPostAuthRedirect(next, data.token, host);
+
     const res = NextResponse.json(
-      { user: data.user, workspace: data.workspace },
+      { redirectTo, user: data.user, workspace: data.workspace },
       { status: 201 },
     );
 
-    // Set the shared SSO cookie issued by the central auth service
     setSessionCookie(data.token, res);
     return res;
   } catch (e: any) {
-    console.error("[register]", e);
+    console.error("[accounts/register]", e);
     return NextResponse.json({ error: "Registration failed" }, { status: 500 });
   }
 }

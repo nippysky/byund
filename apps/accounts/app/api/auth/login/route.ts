@@ -1,31 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
 import { setSessionCookie } from "@/lib/auth";
+import { buildPostAuthRedirect } from "@/lib/redirect";
 
 /**
  * POST /api/auth/login
  *
- * Delegates to the NestJS SSO API so all auth flows go through a single
- * authority. The NestJS API handles:
- *  - argon2 password verification (new accounts)
- *  - bcrypt fallback + transparent re-hash (legacy governance accounts)
- *  - JWT issuance with the shared JWT_SECRET
+ * Central SSO login — delegates to the NestJS auth API.
+ * Sets the byund_session cookie on the accounts domain AND returns a
+ * redirect URL (with ?_token for cross-domain handoff) so the originating
+ * BYUND product can set its own cookie too.
  *
- * We receive the token, set it as the shared byund_session cookie, and
- * return user + workspace metadata to the client.
+ * When custom domains are live (*.byund.com), the cookie Domain=.byund.com
+ * is shared automatically — no callback needed.
  */
 export async function POST(req: NextRequest) {
   try {
-    const { email, password } = await req.json();
+    const { email, password, next } = await req.json();
+
     if (!email || !password) {
       return NextResponse.json({ error: "Email and password required" }, { status: 400 });
     }
 
     const apiUrl = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL;
     if (!apiUrl) {
-      console.error("[login] API_URL / NEXT_PUBLIC_API_URL is not set");
+      console.error("[accounts/login] API_URL is not configured");
       return NextResponse.json({ error: "Auth service unavailable" }, { status: 503 });
     }
 
+    // Delegate to the central NestJS auth service
     const apiRes = await fetch(`${apiUrl}/v1/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -35,23 +37,27 @@ export async function POST(req: NextRequest) {
     const data = await apiRes.json();
 
     if (!apiRes.ok) {
-      // Forward the NestJS error message (e.g. "Invalid email or password")
       return NextResponse.json(
         { error: data.message ?? data.error ?? "Login failed" },
         { status: apiRes.status },
       );
     }
 
+    // Build the post-auth redirect URL
+    const host = req.headers.get("host") ?? "";
+    const redirectTo = buildPostAuthRedirect(next, data.token, host);
+
     const res = NextResponse.json({
+      redirectTo,
       user:      data.user,
       workspace: data.workspace,
     });
 
-    // Set the shared SSO cookie (byund_session) — same one the NestJS API sets
+    // Set cookie on accounts domain (shared on .byund.com when custom domains are live)
     setSessionCookie(data.token, res);
     return res;
   } catch (e) {
-    console.error("[login]", e);
+    console.error("[accounts/login]", e);
     return NextResponse.json({ error: "Login failed" }, { status: 500 });
   }
 }
