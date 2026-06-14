@@ -1,180 +1,81 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Eye, EyeOff } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 
-const signInSchema = z.object({
-  email: z.string().min(1, "Enter a valid email address.").email("Enter a valid email address."),
-  password: z.string().min(1, "Enter your password."),
-});
+const ACCOUNTS_URL   = process.env.NEXT_PUBLIC_ACCOUNTS_URL   ?? "https://byund-accounts.vercel.app";
+const GOVERNANCE_URL = process.env.NEXT_PUBLIC_GOVERNANCE_URL ?? "https://byund-governance.vercel.app";
 
-type SignInValues = z.infer<typeof signInSchema>;
-
-function safeNextPath(raw: string) {
-  if (!raw) return "/dashboard";
-  if (!raw.startsWith("/")) return "/dashboard";
-  if (raw.startsWith("//")) return "/dashboard";
-  return raw;
-}
-
-const inputStyle = {
-  display: "block",
-  width: "100%",
-  padding: "12px 16px",
-  background: "var(--surface-1)",
-  border: "1px solid var(--border-med)",
-  borderRadius: "10px",
-  fontSize: "14px",
-  color: "var(--text-1)",
-  outline: "none",
-  fontFamily: "var(--font-public-sans), system-ui, sans-serif",
-  transition: "border-color 0.2s ease, box-shadow 0.2s ease",
-} as const;
-
-const inputErrorStyle = {
-  ...inputStyle,
-  borderColor: "var(--danger)",
-} as const;
-
-const labelStyle = {
-  display: "block",
-  fontSize: "13px",
-  fontWeight: 600,
-  color: "var(--text-2)",
-  marginBottom: "7px",
-} as const;
-
-const errorStyle = {
-  fontSize: "12px",
-  color: "var(--danger)",
-  marginTop: "5px",
-} as const;
-
+/**
+ * SignInForm — SSO gateway.
+ *
+ * BYUND uses a central accounts app for authentication (like Google Accounts).
+ * This component redirects users to accounts.byund.com/login with a ?next
+ * callback pointing at the governance app's /auth/callback endpoint.
+ *
+ * After a successful login on accounts, the user is sent back to governance
+ * with a verified JWT that sets the session cookie.
+ */
 export function SignInForm({ nextPath }: { nextPath: string }) {
-  const [showPassword, setShowPassword] = useState(false);
-  const [serverError, setServerError] = useState<string | null>(null);
-  const safeNext = useMemo(() => safeNextPath(nextPath), [nextPath]);
+  const callbackUrl = `${GOVERNANCE_URL}/auth/callback`;
 
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<SignInValues>({
-    resolver: zodResolver(signInSchema),
-    defaultValues: { email: "", password: "" },
-  });
+  // Auto-redirect after a brief moment so the user sees the branded page
+  useEffect(() => {
+    const t = setTimeout(() => {
+      window.location.href = `${ACCOUNTS_URL}/login?next=${encodeURIComponent(callbackUrl)}`;
+    }, 800);
+    return () => clearTimeout(t);
+  }, [callbackUrl]);
 
-  async function onSubmit(values: SignInValues) {
-    setServerError(null);
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "same-origin",
-      body: JSON.stringify(values),
-    });
-    const data: { ok?: boolean; error?: string; onboardingRequired?: boolean } = await res.json().catch(() => ({}));
-    if (!res.ok || !data?.ok) {
-      setServerError(data?.error ?? "Sign in failed. Please try again.");
-      return;
-    }
-    const go = data.onboardingRequired ? `/onboarding?next=${encodeURIComponent(safeNext)}` : safeNext;
-    window.location.assign(go);
-  }
+  const handleClick = () => {
+    window.location.href = `${ACCOUNTS_URL}/login?next=${encodeURIComponent(callbackUrl)}`;
+  };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-      {serverError && (
-        <div style={{
-          padding: "12px 16px",
-          background: "rgba(239,68,68,0.08)",
-          border: "1px solid rgba(239,68,68,0.25)",
-          borderRadius: "10px",
-          fontSize: "13px",
-          color: "var(--danger)",
-        }}>
-          {serverError}
-        </div>
-      )}
-
-      {/* Email */}
-      <div>
-        <label htmlFor="email" style={labelStyle}>Email address</label>
-        <input
-          id="email"
-          type="email"
-          autoComplete="email"
-          placeholder="you@company.com"
-          {...register("email")}
-          style={errors.email ? inputErrorStyle : inputStyle}
-          onFocus={e => {
-            (e.target as HTMLInputElement).style.borderColor = "var(--brand)";
-            (e.target as HTMLInputElement).style.boxShadow = "0 0 0 3px var(--brand-sub)";
-          }}
-          onBlur={e => {
-            (e.target as HTMLInputElement).style.borderColor = errors.email ? "var(--danger)" : "var(--border-med)";
-            (e.target as HTMLInputElement).style.boxShadow = "none";
-          }}
-        />
-        {errors.email && <p style={errorStyle}>{errors.email.message}</p>}
-      </div>
-
-      {/* Password */}
-      <div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "7px" }}>
-          <label htmlFor="password" style={{ ...labelStyle, marginBottom: 0 }}>Password</label>
-          <Link href="/forgot-password" style={{ fontSize: "12px", color: "var(--brand-hi)", fontWeight: 500 }}>
-            Forgot password?
-          </Link>
-        </div>
-        <div style={{ position: "relative" }}>
-          <input
-            id="password"
-            type={showPassword ? "text" : "password"}
-            autoComplete="current-password"
-            placeholder="••••••••"
-            {...register("password")}
-            style={{ ...(errors.password ? inputErrorStyle : inputStyle), paddingRight: "44px" }}
-            onFocus={e => {
-              (e.target as HTMLInputElement).style.borderColor = "var(--brand)";
-              (e.target as HTMLInputElement).style.boxShadow = "0 0 0 3px var(--brand-sub)";
-            }}
-            onBlur={e => {
-              (e.target as HTMLInputElement).style.borderColor = errors.password ? "var(--danger)" : "var(--border-med)";
-              (e.target as HTMLInputElement).style.boxShadow = "none";
-            }}
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword(v => !v)}
-            style={{
-              position: "absolute", insetInlineEnd: "12px", top: "50%", transform: "translateY(-50%)",
-              background: "none", border: "none", cursor: "pointer",
-              color: "var(--text-3)", display: "flex", padding: "4px",
-            }}
-            aria-label={showPassword ? "Hide password" : "Show password"}
-          >
-            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-          </button>
-        </div>
-        {errors.password && <p style={errorStyle}>{errors.password.message}</p>}
-      </div>
-
-      {/* Submit */}
+    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+      {/* SSO button */}
       <button
-        type="submit"
-        disabled={isSubmitting}
-        className="btn btn-primary btn-lg"
-        style={{ width: "100%", justifyContent: "center", marginTop: "4px" }}
+        onClick={handleClick}
+        style={{
+          display: "flex", alignItems: "center", justifyContent: "center", gap: "10px",
+          width: "100%", padding: "14px 20px", borderRadius: "12px",
+          background: "var(--brand)", color: "#fff",
+          fontSize: "15px", fontWeight: 700, letterSpacing: "-0.01em",
+          border: "none", cursor: "pointer",
+          boxShadow: "0 4px 24px rgba(114,96,251,0.35)",
+          fontFamily: "inherit",
+          transition: "opacity 0.15s",
+        }}
+        onMouseEnter={e => ((e.target as HTMLButtonElement).style.opacity = "0.88")}
+        onMouseLeave={e => ((e.target as HTMLButtonElement).style.opacity = "1")}
       >
-        {isSubmitting ? "Signing in…" : "Sign in"}
+        <Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} />
+        Continue to BYUND Accounts
+        <ArrowRight size={15} />
       </button>
 
-      <p style={{ textAlign: "center", fontSize: "13px", color: "var(--text-3)" }}>
-        New to BYUND?{" "}
-        <Link href={`/register?next=${encodeURIComponent(safeNext)}`} style={{ color: "var(--brand-hi)", fontWeight: 600 }}>
-          Create an account
-        </Link>
-      </p>
-    </form>
+      {/* Divider + note */}
+      <div style={{ textAlign: "center" }}>
+        <p style={{ fontSize: "12px", color: "var(--text-3)", lineHeight: 1.7 }}>
+          You&apos;ll be redirected to <strong style={{ color: "var(--text-2)" }}>accounts.byund.com</strong> to sign in securely.
+          <br />One account works across all BYUND products.
+        </p>
+      </div>
+
+      <div style={{ borderTop: "1px solid var(--border)", paddingTop: "20px", textAlign: "center" }}>
+        <p style={{ fontSize: "13px", color: "var(--text-3)" }}>
+          New to BYUND?{" "}
+          <Link
+            href={`${ACCOUNTS_URL}/register?next=${encodeURIComponent(callbackUrl)}`}
+            style={{ color: "var(--brand-hi)", fontWeight: 600 }}
+          >
+            Create an account
+          </Link>
+        </p>
+      </div>
+
+      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+    </div>
   );
 }
