@@ -51,7 +51,7 @@ export class AuthService {
       .replace(/[^a-z0-9-]/g, "")
       .slice(0, 40) + "-" + Date.now().toString(36);
 
-    const { user, workspace, role } = await this.prisma.$transaction(async (tx) => {
+    const { user, workspace, role } = await this.prisma.$transaction(async (tx: any) => {
       const user = await tx.user.create({
         data: { name: dto.name, email: dto.email, passwordHash },
       });
