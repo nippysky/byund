@@ -1,124 +1,142 @@
-// components/landing/Pricing.tsx
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
+import { Check, ArrowRight } from "lucide-react";
 
-const STANDARD_FEE = "1.25%";
+const TIERS = [
+  {
+    name: "Starter",
+    price: "Free",
+    sub: "During early access",
+    desc: "Perfect for small IT teams getting their first asset register in order.",
+    features: [
+      "Up to 50 assets",
+      "3 users",
+      "Monthly & quarterly reviews",
+      "Basic findings tracking",
+      "Evidence uploads (1GB)",
+      "Activity log (30 days)",
+    ],
+    cta: "Join Waitlist",
+    href: "/#waitlist",
+    primary: false,
+  },
+  {
+    name: "Growth",
+    price: "Coming Soon",
+    sub: "Pricing to be announced",
+    desc: "For growing teams that need full governance workflows and team collaboration.",
+    features: [
+      "Unlimited assets",
+      "Unlimited users",
+      "All review frequencies",
+      "Full findings & evidence workflow",
+      "Storage 25GB",
+      "Activity log (1 year)",
+      "Email notifications",
+      "Manager approval workflows",
+    ],
+    cta: "Get Notified",
+    href: "/#waitlist",
+    primary: true,
+  },
+  {
+    name: "Enterprise",
+    price: "Custom",
+    sub: "Talk to us",
+    desc: "For enterprises, banks, and MSPs needing custom contracts and dedicated support.",
+    features: [
+      "Everything in Growth",
+      "SSO / SAML (v1.1)",
+      "Dedicated onboarding",
+      "Custom data retention",
+      "SLA guarantee",
+      "Priority support",
+    ],
+    cta: "Contact Us",
+    href: "mailto:hello@nippysky.com",
+    primary: false,
+  },
+];
 
 export default function Pricing() {
   return (
-    <section
-      id="pricing"
-      className="bg-background py-16 md:py-20 lg:py-24"
-    >
-      <div className="mx-auto max-w-7xl px-6 lg:px-10">
+    <section className="section" id="pricing">
+      <div className="container">
         <motion.div
-          initial={{ opacity: 0, y: 22 }}
+          initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.35 }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-          className="rounded-3xl border border-border bg-white px-4 py-8 shadow-sm md:px-8 md:py-10 lg:px-10 lg:py-12"
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
+          style={{ textAlign: "center", maxWidth: "520px", margin: "0 auto 64px" }}
         >
-          <div className="grid gap-10 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] md:items-center">
-            {/* Left: headline + bullets */}
-            <div className="space-y-4 md:space-y-5">
-              <p className="text-xs font-medium uppercase tracking-[0.25em] text-muted">
-                Pricing
-              </p>
-              <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">
-                One transparent fee on every successful payment.
-              </h2>
-              <p className="max-w-lg text-sm text-muted md:text-base">
-                BYUND doesn&apos;t charge setup or monthly software fees. You&apos;re
-                only billed when you actually get paid, so costs scale with your
-                revenue, not your ambition.
-              </p>
+          <span className="badge badge-brand" style={{ marginBottom: "20px" }}>Pricing</span>
+          <h2 style={{ fontSize: "clamp(30px, 4vw, 50px)", fontWeight: 800, letterSpacing: "-0.04em", marginBottom: "14px" }}>
+            Simple. Transparent. Fair.
+          </h2>
+          <p style={{ fontSize: "16px", color: "var(--text-secondary)", lineHeight: 1.65 }}>
+            Start free during early access. Pricing is designed to scale with your team,
+            not your ambition.
+          </p>
+        </motion.div>
 
-              <ul className="mt-4 space-y-2 text-sm text-muted md:text-[15px]">
-                <li>• No setup, no minimums, no monthly subscription.</li>
-                <li>• Pay a single percentage on successful payments.</li>
-                <li>• Underlying payment network fees are passed through transparently.</li>
-                <li>• Volume-based discounts as your flows grow.</li>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(1,1fr)", gap: "16px", maxWidth: "1000px", margin: "0 auto" }} className="md:grid-cols-3">
+          {TIERS.map((tier, i) => (
+            <motion.div
+              key={tier.name}
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ delay: i * 0.1, duration: 0.55, ease: [0.23, 1, 0.32, 1] }}
+              style={{
+                borderRadius: "20px",
+                padding: "36px 32px",
+                display: "flex",
+                flexDirection: "column",
+                position: "relative",
+                overflow: "hidden",
+                background: tier.primary
+                  ? "linear-gradient(145deg, rgba(109,86,250,0.14) 0%, rgba(109,86,250,0.05) 100%)"
+                  : "rgba(255,255,255,0.025)",
+                border: tier.primary
+                  ? "1px solid rgba(109,86,250,0.35)"
+                  : "1px solid rgba(255,255,255,0.07)",
+              }}
+            >
+              {tier.primary && (
+                <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "2px", background: "linear-gradient(90deg, var(--brand-dark), var(--brand-light))" }} />
+              )}
+              {tier.primary && (
+                <span className="badge badge-brand" style={{ position: "absolute", top: "20px", right: "20px", fontSize: "10px" }}>Popular</span>
+              )}
+
+              <p style={{ fontSize: "13px", fontWeight: 700, color: tier.primary ? "var(--brand-light)" : "var(--text-muted)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "16px" }}>
+                {tier.name}
+              </p>
+              <p style={{ fontSize: "clamp(28px,3vw,38px)", fontWeight: 800, letterSpacing: "-0.04em", marginBottom: "4px" }}>{tier.price}</p>
+              <p style={{ fontSize: "12px", color: "var(--text-muted)", marginBottom: "16px" }}>{tier.sub}</p>
+              <p style={{ fontSize: "14px", color: "var(--text-secondary)", lineHeight: 1.6, marginBottom: "28px" }}>{tier.desc}</p>
+
+              <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: "10px", flex: 1, marginBottom: "32px" }}>
+                {tier.features.map(f => (
+                  <li key={f} style={{ display: "flex", alignItems: "flex-start", gap: "10px", fontSize: "13px", color: "var(--text-secondary)" }}>
+                    <Check size={14} color="var(--success)" style={{ marginTop: "1px", flexShrink: 0 }} />
+                    {f}
+                  </li>
+                ))}
               </ul>
 
-              <p className="pt-3 text-[11px] text-muted">
-                Early teams and design partners can receive reduced fees while we
-                learn together and shape the roadmap.
-              </p>
-            </div>
-
-            {/* Right: fee card + example */}
-            <div className="space-y-4 md:space-y-5">
-              {/* Main fee pill */}
-              <div className="relative overflow-hidden rounded-2xl border border-border bg-surface px-4 py-5 md:px-5 md:py-6">
-                <div className="pointer-events-none absolute inset-x-0 -top-10 h-20 bg-linear-to-r from-accent/10 via-accent/0 to-accent/10 blur-2xl" />
-                <div className="relative flex items-end justify-between gap-4">
-                  <div className="space-y-1">
-                    <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted">
-                      Standard fee
-                    </p>
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-3xl font-semibold tracking-tight md:text-4xl">
-                        {STANDARD_FEE}
-                      </span>
-                      <span className="text-xs text-muted md:text-sm">
-                        per successful payment
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted md:text-[13px]">
-                      Applied only when a payment completes. No extras, no hidden
-                      platform charges.
-                    </p>
-                  </div>
-
-                  <div className="inline-flex flex-col items-end gap-1 rounded-xl bg-white px-3 py-2 text-right text-[11px] shadow-sm">
-                    <span className="font-medium text-foreground/80">
-                      Volume pricing
-                    </span>
-                    <span className="text-muted">
-                      Talk to us once you&apos;re
-                      <br />
-                      processing serious volume.
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Example breakdown */}
-              <div className="rounded-2xl border border-border bg-white px-4 py-4 md:px-5 md:py-5">
-                <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted">
-                  How a $1,000 payment looks
-                </p>
-                <div className="mt-3 space-y-2 text-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted">Payment amount</span>
-                    <span className="font-semibold">$1,000.00</span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs text-muted md:text-[13px]">
-                    <span>BYUND fee ({STANDARD_FEE})</span>
-                    <span>$12.50</span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs text-muted md:text-[13px]">
-                    <span>Payment network fee (approx.)</span>
-                    <span>$0.10–$0.50</span>
-                  </div>
-                  <div className="mt-2 flex items-center justify-between border-t border-border pt-2">
-                    <span className="text-sm font-medium">You receive</span>
-                    <span className="text-sm font-semibold">
-                      ~$987.00+
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <p className="text-[11px] text-muted">
-                Figures above are illustrative. Exact fees depend on your volume,
-                geography, and use case, but the model stays the same: a single,
-                simple percentage on successful payments.
-              </p>
-            </div>
-          </div>
-        </motion.div>
+              <Link
+                href={tier.href}
+                className={tier.primary ? "btn btn-primary btn-md" : "btn btn-ghost btn-md"}
+                style={{ justifyContent: "center", gap: "8px" }}
+              >
+                {tier.cta} <ArrowRight size={14} />
+              </Link>
+            </motion.div>
+          ))}
+        </div>
       </div>
     </section>
   );

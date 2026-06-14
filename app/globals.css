@@ -1,122 +1,316 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* ========== BYUND BRAND TOKENS (LIGHT ONLY) ========== */
+/* ============================================================
+   BYUND BRAND DESIGN SYSTEM
+   NIPPYSKY LIMITED · 2026
+   Dark-first. Premium. Enterprise-grade.
+   ============================================================ */
 
 :root {
-  /* Core brand */
-  --background: #ffffff;
-  --foreground: #0f1115;
+  /* ── Base ── */
+  --background:    #060810;
+  --foreground:    #f0f4ff;
+  --surface-1:     #0c1120;
+  --surface-2:     #111827;
+  --surface-3:     #1a2236;
 
-  --byund-blue: #0066ff;
-  --byund-blue-soft: #e6f0ff;
+  /* ── Borders ── */
+  --border:        rgba(255,255,255,0.07);
+  --border-soft:   rgba(255,255,255,0.04);
+  --border-med:    rgba(255,255,255,0.12);
 
-  --muted: #6b7280;
-  --border: #e2e4ea;
-  --surface: #f5f7fb;
+  /* ── Text ── */
+  --text-primary:    #f0f4ff;
+  --text-secondary:  #8fa3c1;
+  --text-muted:      #4d6080;
 
-  --radius: 0.625rem;
+  /* ── Brand Accent — Electric Violet/Indigo ── */
+  --brand:         #6d56fa;
+  --brand-light:   #9b8bfb;
+  --brand-dark:    #4f3dd4;
+  --brand-glow:    rgba(109,86,250,0.4);
+  --brand-subtle:  rgba(109,86,250,0.08);
+  --brand-subtle2: rgba(109,86,250,0.16);
+
+  /* ── Semantic ── */
+  --success:  #10b981;
+  --warning:  #f59e0b;
+  --danger:   #ef4444;
+
+  /* ── Radius ── */
+  --radius-sm:  6px;
+  --radius-md:  10px;
+  --radius-lg:  16px;
+  --radius-xl:  24px;
+  --radius-2xl: 32px;
+
+  /* ── Ease ── */
+  --ease-smooth: cubic-bezier(0.23, 1, 0.32, 1);
+
+  /* ── Font ── */
+  --font-sans: var(--font-public-sans), system-ui, -apple-system, sans-serif;
 }
 
-/* Tailwind v4 design tokens (just what we actually use) */
+/* ── Tailwind v4 bridge ── */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-
-  --color-surface: var(--surface);
-  --color-border: var(--border);
-  --color-muted: var(--muted);
-
-  /* Brand colors */
-  --color-accent: var(--byund-blue);
-  --color-accent-soft: var(--byund-blue-soft);
-
-  /* Primary = main BYUND blue, for buttons etc */
-  --color-primary: var(--byund-blue);
-  --color-primary-foreground: #ffffff;
-
-  /* Typography: Public Sans everywhere */
-  --font-sans: var(--font-public-sans);
-  --font-heading: var(--font-public-sans);
+  --color-background:     var(--background);
+  --color-foreground:     var(--foreground);
+  --color-surface-1:      var(--surface-1);
+  --color-surface-2:      var(--surface-2);
+  --color-surface-3:      var(--surface-3);
+  --color-border:         var(--border);
+  --color-border-med:     var(--border-med);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted:     var(--text-muted);
+  --color-brand:          var(--brand);
+  --color-brand-light:    var(--brand-light);
+  --color-brand-dark:     var(--brand-dark);
+  --color-brand-subtle:   var(--brand-subtle);
+  --color-brand-subtle2:  var(--brand-subtle2);
+  --color-success:        var(--success);
+  --color-warning:        var(--warning);
+  --color-danger:         var(--danger);
+  --font-sans:            var(--font-sans);
 }
 
-/* ========== GLOBAL RESETS ========== */
-
-*,
-*::before,
-*::after {
+/* ── Global resets ── */
+*, *::before, *::after {
   box-sizing: border-box;
-}
-
-html,
-body {
   margin: 0;
   padding: 0;
 }
 
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 body {
   background-color: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-public-sans), system-ui, -apple-system,
-    BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  line-height: 1.65;
+  overflow-x: hidden;
 }
 
-/* Headings use same font, just heavier + tighter */
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  font-family: var(--font-public-sans), system-ui, -apple-system,
-    BlinkMacSystemFont, "Segoe UI", sans-serif;
-  letter-spacing: -0.02em;
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-sans);
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+  color: var(--text-primary);
 }
 
-/* Simple defaults for links + buttons */
-a {
-  text-decoration: none;
+a { text-decoration: none; color: inherit; }
+button { font-family: inherit; cursor: pointer; border: none; background: none; }
+img, svg { display: block; }
+
+/* ── Gradient text ── */
+.text-gradient {
+  background: linear-gradient(135deg, #c4b5fd 0%, #a78bfa 35%, #6d56fa 70%, #4f3dd4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-button {
-  font-family: inherit;
-  cursor: pointer;
+.text-gradient-white {
+  background: linear-gradient(170deg, #ffffff 0%, #c4b5fd 60%, #9b8bfb 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-/* Ensure accent/primary backgrounds always have white text */
-.bg-accent,
-.bg-primary {
-  color: #ffffff !important;
+/* ── Glass card ── */
+.glass {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
-/* ========== BASE LAYER ========== */
-
-@layer base {
-  * {
-    @apply border-border;
-  }
-
-  body {
-    @apply bg-background text-foreground;
-  }
+.glass-med {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border-med);
+  backdrop-filter: blur(16px);
 }
 
-/* BYUND text action links (e.g. "Forgot password?", "Sign in instead") */
-.text-action {
-  color: var(--byund-blue);
+.glass-hover {
+  transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, transform 0.3s var(--ease-smooth);
+}
+
+.glass-hover:hover {
+  background: rgba(255,255,255,0.06);
+  border-color: var(--border-med);
+  transform: translateY(-3px);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.06);
+}
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   font-weight: 600;
-}
-
-.text-action:hover {
-  text-decoration: underline;
-}
-
-button {
+  letter-spacing: -0.01em;
+  border-radius: var(--radius-md);
+  transition: all 0.2s var(--ease-smooth);
+  white-space: nowrap;
   cursor: pointer;
+  border: 1px solid transparent;
+  text-decoration: none;
+  font-family: var(--font-sans);
 }
 
-@keyframes shimmer {
-  100% {
-    transform: translateX(100%);
-  }
+.btn-sm  { padding: 8px 16px;  font-size: 13px; }
+.btn-md  { padding: 11px 22px; font-size: 14px; }
+.btn-lg  { padding: 14px 28px; font-size: 15px; }
+.btn-xl  { padding: 17px 36px; font-size: 16px; }
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--brand-light) 0%, var(--brand) 100%);
+  color: #ffffff;
+  box-shadow: 0 0 0 0 var(--brand-glow), inset 0 1px 0 rgba(255,255,255,0.15);
 }
+.btn-primary:hover {
+  box-shadow: 0 0 28px var(--brand-glow), inset 0 1px 0 rgba(255,255,255,0.2);
+  transform: translateY(-1px);
+}
+.btn-primary:active { transform: translateY(0); box-shadow: none; }
+
+.btn-secondary {
+  background: var(--brand-subtle2);
+  color: var(--brand-light);
+  border-color: rgba(109,86,250,0.3);
+}
+.btn-secondary:hover {
+  background: rgba(109,86,250,0.22);
+  border-color: rgba(109,86,250,0.5);
+  transform: translateY(-1px);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border-color: var(--border-med);
+}
+.btn-ghost:hover {
+  background: rgba(255,255,255,0.04);
+  color: var(--text-primary);
+  border-color: rgba(255,255,255,0.15);
+}
+
+/* ── Badge ── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border-radius: 100px;
+}
+
+.badge-brand {
+  background: var(--brand-subtle2);
+  color: var(--brand-light);
+  border: 1px solid rgba(109,86,250,0.35);
+}
+
+.badge-success {
+  background: rgba(16,185,129,0.1);
+  color: var(--success);
+  border: 1px solid rgba(16,185,129,0.25);
+}
+
+.badge-neutral {
+  background: rgba(255,255,255,0.05);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-med);
+}
+
+/* ── Layout helpers ── */
+.section    { padding: 96px 0;  position: relative; }
+.section-sm { padding: 64px 0;  position: relative; }
+.section-lg { padding: 128px 0; position: relative; }
+
+.container {
+  width: 100%;
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+@media (min-width: 768px)  { .container { padding: 0 40px; } }
+@media (min-width: 1280px) { .container { padding: 0 48px; } }
+
+.divider {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--border-med) 50%, transparent 100%);
+}
+
+/* ── Grid overlay ── */
+.grid-bg {
+  background-image:
+    linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.022) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
+
+/* ── Glow blob ── */
+.glow-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  pointer-events: none;
+  will-change: transform;
+  background: radial-gradient(circle, rgba(109,86,250,0.35) 0%, transparent 70%);
+}
+
+/* ── Animations ── */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-10px); }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.85); }
+}
+
+@keyframes shimmer-move {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.animate-float    { animation: float 5s ease-in-out infinite; }
+.animate-pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
+.animate-marquee  { animation: marquee 30s linear infinite; }
+
+/* ── Focus ── */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+
+/* ── Selection ── */
+::selection {
+  background: var(--brand-subtle2);
+  color: var(--brand-light);
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar        { width: 5px; }
+::-webkit-scrollbar-track  { background: var(--background); }
+::-webkit-scrollbar-thumb  { background: var(--surface-3); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }

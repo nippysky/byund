@@ -1,145 +1,113 @@
-// components/landing/HowItWorks.tsx
 "use client";
 
 import { motion } from "framer-motion";
+import { PlusCircle, ClipboardCheck, Bell, BarChart3 } from "lucide-react";
 
-const steps = [
+const STEPS = [
   {
-    label: "01",
-    title: "Connect your business",
-    body: "Create a BYUND account, connect your wallet, and choose how you want to receive USD balances. You can start in test mode in a few minutes.",
+    n: "01",
+    icon: <PlusCircle size={20} />,
+    title: "Register your assets",
+    desc: "Add servers, applications, databases, SSL certificates, and more. Assign technical and business owners, set risk ratings and environments.",
   },
   {
-    label: "02",
-    title: "Create a payment link or checkout",
-    body: "Generate a hosted payment link or embed checkout into your product. You define the amount in USD, description, and metadata your system will reconcile with.",
+    n: "02",
+    icon: <ClipboardCheck size={20} />,
+    title: "Schedule reviews",
+    desc: "Set monthly, quarterly, or annual review cycles. BYUND automatically creates review tasks and assigns them to the right people.",
   },
   {
-    label: "03",
-    title: "Customer pays in digital USD",
-    body: "Your customer sees a clean amount in USD and a single confirmation step. Under the hood, funds move using supported digital dollars.",
+    n: "03",
+    icon: <Bell size={20} />,
+    title: "Get notified, take action",
+    desc: "Reviewers are notified when action is needed. Complete reviews, upload evidence, raise findings — all in one place.",
   },
   {
-    label: "04",
-    title: "Track, settle, and automate",
-    body: "See every payment in your BYUND dashboard, receive events via webhooks, and plug data into your own ledgers and workflows.",
+    n: "04",
+    icon: <BarChart3 size={20} />,
+    title: "Stay audit-ready",
+    desc: "Every action generates an immutable audit trail. When auditors come knocking, you have the full history at your fingertips.",
   },
 ];
 
 export default function HowItWorks() {
   return (
-    <section
-      id="how-it-works"
-      className="relative rounded-3xl border border-border bg-linear-to-b from-white via-white to-surface/80 px-4 py-10 md:px-8 md:py-14 lg:px-10 lg:py-16"
-    >
-      {/* soft brand glow */}
-      <div className="pointer-events-none absolute inset-x-8 -top-24 h-40 rounded-[120px] bg-linear-to-r from-accent/10 via-accent/3 to-accent/0 blur-3xl" />
+    <section className="section">
+      <div className="divider" />
+      <div className="container" style={{ paddingTop: "96px" }}>
 
-      <div className="relative grid gap-10 md:min-h-[80vh] md:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-        {/* Left: sticky visual */}
-        <div className="md:sticky md:top-28 md:self-start">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.4 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="relative overflow-hidden rounded-3xl border border-border bg-white shadow-sm"
-          >
-            <div className="aspect-4/3 bg-linear-to-br from-accent/8 via-white to-accent-soft/40">
-              <div className="flex h-full flex-col justify-between p-4 md:p-6">
-                <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-[11px] font-medium text-muted shadow-sm backdrop-blur">
-                  BYUND flow
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                </div>
-
-                <div className="space-y-2 text-xs">
-                  <div className="flex items-center justify-between rounded-2xl bg-white/90 p-3 shadow-sm backdrop-blur">
-                    <div>
-                      <p className="text-[11px] text-muted">Incoming payment</p>
-                      <p className="text-sm font-semibold">$2,400.00</p>
-                    </div>
-                    <span className="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-medium text-emerald-700">
-                      Confirmed
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-2xl bg-white/70 p-3 backdrop-blur">
-                    <p className="text-[11px] text-muted">
-                      Platform balance • USD
-                    </p>
-                    <p className="text-[11px] text-muted">
-                      Webhook delivered
-                    </p>
-                  </div>
-                  <div className="flex items-center justify-between rounded-2xl bg-white/60 p-3 backdrop-blur">
-                    <p className="text-[11px] text-muted">
-                      Your system
-                    </p>
-                    <p className="text-[11px] text-muted">
-                      Access granted / order fulfilled
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          <p className="mt-3 text-xs text-muted">
-            This visual stays anchored while you scroll through the flow.
-            Replace it with a real BYUND dashboard or checkout animation when
-            you have assets.
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
+          style={{ textAlign: "center", maxWidth: "560px", margin: "0 auto 72px" }}
+        >
+          <span className="badge badge-brand" style={{ marginBottom: "20px" }}>How it works</span>
+          <h2 style={{ fontSize: "clamp(32px, 4vw, 52px)", fontWeight: 800, letterSpacing: "-0.04em", marginBottom: "16px" }}>
+            From chaos to control in four steps
+          </h2>
+          <p style={{ fontSize: "17px", color: "var(--text-secondary)", lineHeight: 1.65 }}>
+            No complex setup. No weeks of onboarding. Start seeing value in your first session.
           </p>
-        </div>
+        </motion.div>
 
-        {/* Right: scrolling copy (parallax feel against sticky visual) */}
-        <div className="space-y-8 md:space-y-10">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.4 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="space-y-3"
-          >
-            <p className="text-xs font-medium uppercase tracking-[0.25em] text-muted">
-              How BYUND works
-            </p>
-            <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">
-              One rail, four simple steps.
-            </h2>
-            <p className="max-w-lg text-sm text-muted md:text-base">
-              BYUND abstracts networks and wallets into a single USD rail, so
-              your team only thinks about customers, invoices, and settlement —
-              not chains and bridges.
-            </p>
-          </motion.div>
+        {/* Steps */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(1, 1fr)", gap: "2px" }} className="md:grid-cols-2 lg:grid-cols-4">
+          {STEPS.map((step, i) => (
+            <motion.div
+              key={step.n}
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ delay: i * 0.1, duration: 0.55, ease: [0.23, 1, 0.32, 1] }}
+              style={{
+                padding: "36px 32px",
+                background: i === 0 ? "rgba(109,86,250,0.06)" : "rgba(255,255,255,0.02)",
+                border: "1px solid",
+                borderColor: i === 0 ? "rgba(109,86,250,0.2)" : "rgba(255,255,255,0.06)",
+                borderRadius: i === 0 ? "16px 0 0 16px" : i === 3 ? "0 16px 16px 0" : "0",
+                position: "relative",
+              }}
+              className="!rounded-2xl md:!rounded-none"
+            >
+              {/* Step number */}
+              <p style={{ fontSize: "11px", fontWeight: 700, color: "var(--brand-light)", letterSpacing: "0.1em", marginBottom: "20px" }}>
+                {step.n}
+              </p>
 
-          <div className="space-y-4 pb-4 md:pb-10">
-            {steps.map((step, index) => (
-              <motion.div
-                key={step.label}
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.3 }}
-                transition={{
-                  duration: 0.45,
-                  ease: "easeOut",
-                  delay: index * 0.07,
-                }}
-                className="group flex gap-4 rounded-2xl border border-border bg-white/90 p-4 shadow-[0_14px_40px_rgba(15,17,21,0.03)] backdrop-blur-sm md:p-5"
-              >
-                <div className="mt-1 text-xs font-semibold text-muted">
-                  {step.label}
+              {/* Icon */}
+              <div style={{
+                width: "44px", height: "44px", borderRadius: "12px",
+                background: "var(--brand-subtle2)", border: "1px solid rgba(109,86,250,0.25)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: "var(--brand-light)", marginBottom: "20px",
+              }}>
+                {step.icon}
+              </div>
+
+              <h3 style={{ fontSize: "17px", fontWeight: 700, letterSpacing: "-0.03em", marginBottom: "10px", color: "var(--text-primary)" }}>
+                {step.title}
+              </h3>
+              <p style={{ fontSize: "14px", color: "var(--text-secondary)", lineHeight: 1.65 }}>
+                {step.desc}
+              </p>
+
+              {/* Connector arrow */}
+              {i < 3 && (
+                <div className="hidden lg:flex" style={{
+                  position: "absolute", right: "-14px", top: "50%", transform: "translateY(-50%)",
+                  width: "28px", height: "28px", borderRadius: "50%",
+                  background: "var(--background)", border: "1px solid rgba(255,255,255,0.08)",
+                  alignItems: "center", justifyContent: "center",
+                  fontSize: "12px", color: "var(--text-muted)", zIndex: 2,
+                }}>
+                  →
                 </div>
-                <div className="space-y-1">
-                  <h3 className="text-sm font-medium md:text-base">
-                    {step.title}
-                  </h3>
-                  <p className="text-xs text-muted md:text-sm">
-                    {step.body}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+              )}
+            </motion.div>
+          ))}
         </div>
       </div>
     </section>

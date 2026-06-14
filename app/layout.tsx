@@ -11,9 +11,17 @@ const publicSans = Public_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "BYUND – Beyond Borders. Global USD Payments.",
+  title: "BYUND — Infrastructure You Can Trust",
   description:
-    "BYUND is a modern payment rail that helps businesses receive and manage USD-denominated payments globally with a simple, clean checkout experience.",
+    "BYUND is the modern platform for IT governance, asset ownership, and audit readiness. Know what you own, who owns it, and when it was last reviewed.",
+  keywords: ["IT governance", "asset management", "audit", "compliance", "BYUND", "NIPPYSKY"],
+  authors: [{ name: "NIPPYSKY LIMITED" }],
+  openGraph: {
+    title: "BYUND — Infrastructure You Can Trust",
+    description: "Asset ownership, reviews and audit governance for modern IT teams.",
+    siteName: "BYUND",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
