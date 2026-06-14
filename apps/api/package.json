@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "nest start --watch",
-    "build": "nest build",
+    "build": "prisma generate && nest build",
     "start": "node dist/main",
     "lint": "eslint \"{src,apps,libs}/**/*.ts\"",
     "typecheck": "tsc --noEmit",
@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@byund/types": "workspace:*",
+    "@fastify/cookie": "^11.0.2",
     "@nestjs/common": "^11.0.0",
     "@nestjs/core": "^11.0.0",
     "@nestjs/platform-fastify": "^11.0.0",

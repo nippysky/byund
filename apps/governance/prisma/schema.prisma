@@ -122,6 +122,12 @@ model WorkspaceSettings {
   requireEvidenceForReview       Boolean  @default(false)
   notifyOnUpcomingReview         Boolean  @default(true)
   notifyDaysBeforeReview         Int      @default(7)
+  // White-label / branding
+  brandName                      String?
+  brandColor                     String?
+  brandLogoUrl                   String?
+  faviconUrl                     String?
+  customDomain                   String?
   updatedAt                      DateTime @updatedAt
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)

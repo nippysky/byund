@@ -2,6 +2,7 @@ import { NestFactory } from "@nestjs/core";
 import { FastifyAdapter, NestFastifyApplication } from "@nestjs/platform-fastify";
 import { ValidationPipe, Logger } from "@nestjs/common";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import fastifyCookie from "@fastify/cookie";
 import { AppModule } from "./app.module";
 
 async function bootstrap() {
@@ -11,6 +12,11 @@ async function bootstrap() {
     AppModule,
     new FastifyAdapter({ logger: false }),
   );
+
+  // ── Cookie support (needed for byund_session SSO cookie) ──
+  await app.register(fastifyCookie, {
+    secret: process.env.COOKIE_SECRET ?? process.env.JWT_SECRET ?? "byund-cookie-secret",
+  });
 
   // ── Global prefix ──
   app.setGlobalPrefix("v1");

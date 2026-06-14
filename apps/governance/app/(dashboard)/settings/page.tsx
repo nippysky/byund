@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import Topbar from "@/components/layout/Topbar";
-import { Save, Building2, Bell, Shield, Eye, EyeOff } from "lucide-react";
+import { Save, Building2, Bell, Shield, Eye, EyeOff, Database, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 
 interface Settings {
@@ -124,6 +124,9 @@ export default function SettingsPage() {
           </div>
         </div>
 
+        {/* Demo Data */}
+        <SeedSection />
+
         {/* Save */}
         <div style={{display:"flex",justifyContent:"flex-end",gap:12}}>
           {changed && <span style={{alignSelf:"center",fontSize:13,color:"var(--text-muted)"}}>Unsaved changes</span>}
@@ -148,6 +151,54 @@ function Toggle({label,desc,checked,onChange}:{label:string;desc:string;checked:
         style={{flexShrink:0,width:44,height:24,borderRadius:12,border:"none",cursor:"pointer",padding:0,position:"relative",background:checked?"var(--brand)":"var(--surface)",transition:"background .2s"}}
       >
         <div style={{position:"absolute",top:3,left:checked?22:3,width:18,height:18,borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.3)"}}/>
+      </button>
+    </div>
+  );
+}
+
+function SeedSection() {
+  const [seeding, setSeeding]   = useState(false);
+  const [seeded,  setSeeded]    = useState(false);
+
+  const seed = async () => {
+    if (!confirm("This will populate your workspace with 20 assets, 30+ findings, reviews, team members and audit logs. Continue?")) return;
+    setSeeding(true);
+    try {
+      const res  = await fetch("/api/seed", { method: "POST" });
+      const data = await res.json();
+      if (data.skipped) { toast.info("Demo data already present — nothing to do."); }
+      else if (data.ok) {
+        toast.success(`Demo data seeded! ${data.counts.assets} assets, ${data.counts.findings} findings, ${data.counts.members} team members added.`);
+        setSeeded(true);
+        setTimeout(() => window.location.href = "/", 1500);
+      } else { toast.error(data.error ?? "Seed failed"); }
+    } catch { toast.error("Seed request failed"); }
+    finally { setSeeding(false); }
+  };
+
+  return (
+    <div className="card" style={{padding:24,marginBottom:20,borderColor:"var(--brand)",borderWidth:1}}>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+        <Database size={18} style={{color:"var(--brand)"}}/>
+        <h3 style={{margin:0,fontWeight:700,fontSize:15}}>Demo Data</h3>
+        <span style={{marginLeft:"auto",fontSize:11,background:"var(--brand)",color:"#fff",padding:"2px 8px",borderRadius:20,fontWeight:600}}>DEV</span>
+      </div>
+      <p style={{margin:"0 0 16px",fontSize:13,color:"var(--text-muted)",lineHeight:1.6}}>
+        Populate this workspace with realistic demo data — 20 assets, 30+ security findings, complete review history, 5 team members, and a full audit log. Great for testing and demos.
+      </p>
+      <button
+        onClick={seed}
+        disabled={seeding || seeded}
+        style={{
+          display:"inline-flex",alignItems:"center",gap:8,padding:"10px 20px",
+          background: seeded ? "var(--success, #16a34a)" : "var(--brand)",
+          color:"#fff",border:"none",borderRadius:8,cursor:seeding||seeded?"not-allowed":"pointer",
+          fontWeight:600,fontSize:14,opacity:seeding||seeded?0.7:1
+        }}
+      >
+        {seeding ? <><Loader2 size={15} style={{animation:"spin 1s linear infinite"}}/>Seeding…</> :
+         seeded  ? "✓ Seeded! Redirecting…" :
+                   <><Database size={15}/>Seed Demo Data</>}
       </button>
     </div>
   );
