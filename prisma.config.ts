@@ -8,6 +8,7 @@ import { config as dotenvConfig } from "dotenv";
 dotenvConfig({ path: ".env" });
 
 export default defineConfig({
+  // @ts-expect-error earlyAccess not in Prisma 7 types but still accepted by CLI
   earlyAccess: true,
   schema: path.join("prisma", "schema.prisma"),
   datasource: {
