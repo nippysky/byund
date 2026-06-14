@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 
 function Mark() {
@@ -28,8 +30,8 @@ const COLS = [
     heading: "Company",
     links: [
       { label: "About", href: "/company" },
-      { label: "Contact", href: "mailto:hello@nippysky.com" },
-      { label: "Careers", href: "#" },
+      { label: "Contact", href: "/contact" },
+      { label: "Careers", href: "/careers" },
     ],
   },
   {
@@ -37,7 +39,7 @@ const COLS = [
     links: [
       { label: "Privacy Policy", href: "/privacy" },
       { label: "Terms of Service", href: "/terms" },
-      { label: "Security", href: "#" },
+      { label: "Security", href: "/security" },
     ],
   },
 ];

@@ -59,19 +59,21 @@ function ProductsDropdown({ onClose }: { onClose: () => void }) {
           }}>
             {p.icon}
           </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "3px" }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "3px", flexWrap: "wrap" }}>
               <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-1)" }}>{p.name}</span>
               <span style={{
-                fontSize: "10px", fontWeight: 700, padding: "2px 8px", borderRadius: "100px",
+                fontSize: "10px", fontWeight: 700,
+                padding: "2px 9px", borderRadius: "100px",
+                whiteSpace: "nowrap" as const,
                 background: p.live ? "var(--brand-sub2)" : "var(--surface-2)",
                 color: p.live ? "var(--brand-hi)" : "var(--text-3)",
-                border: `1px solid ${p.live ? "rgba(114,96,251,0.25)" : "var(--border)"}`,
+                border: `1px solid ${p.live ? "rgba(114,96,251,0.3)" : "var(--border-med)"}`,
               }}>
                 {p.status}
               </span>
             </div>
-            <p style={{ fontSize: "12px", color: "var(--text-3)" }}>{p.sub}</p>
+            <p style={{ fontSize: "12px", color: "var(--text-3)", whiteSpace: "nowrap" as const, overflow: "hidden", textOverflow: "ellipsis" }}>{p.sub}</p>
           </div>
           {p.live && <ExternalLink size={13} color="var(--text-3)" style={{ flexShrink: 0, marginTop: "4px" }} />}
         </Link>
@@ -100,7 +102,6 @@ export default function Header() {
     return () => window.removeEventListener("scroll", fn);
   }, []);
 
-  // Close dropdown on outside click
   useEffect(() => {
     const fn = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -111,7 +112,6 @@ export default function Header() {
     return () => document.removeEventListener("mousedown", fn);
   }, []);
 
-  // Lock body scroll when mobile menu open
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
@@ -122,8 +122,9 @@ export default function Header() {
       <header
         style={{
           position: "fixed",
-          insetInline: 0,
           top: 0,
+          left: 0,
+          right: 0,
           zIndex: 100,
           display: "flex",
           justifyContent: "center",
@@ -132,35 +133,25 @@ export default function Header() {
           borderBottom: scrolled ? "1px solid var(--border)" : "1px solid transparent",
           backdropFilter: scrolled ? "blur(20px) saturate(1.8)" : "none",
           WebkitBackdropFilter: scrolled ? "blur(20px) saturate(1.8)" : "none",
-          transition: "background 0.3s ease, border-color 0.3s ease, backdrop-filter 0.3s ease",
+          transition: "background 0.3s ease, border-color 0.3s ease",
         }}
       >
-        <div
-          style={{
-            width: "100%",
-            maxWidth: "1280px",
-            padding: "0 20px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            height: "100%",
-            gap: "16px",
-          }}
-        >
+        <div style={{
+          width: "100%", maxWidth: "1280px", padding: "0 20px",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          height: "100%", gap: "16px",
+        }}>
           {/* Logo */}
           <Link href="/" style={{ display: "flex", alignItems: "center", gap: "9px", textDecoration: "none", flexShrink: 0 }}>
             <Mark size={28} />
-            <span style={{ fontSize: "16px", fontWeight: 800, letterSpacing: "-0.045em", color: "var(--text-1)" }}>
-              BYUND
-            </span>
+            <span style={{ fontSize: "16px", fontWeight: 800, letterSpacing: "-0.045em", color: "var(--text-1)" }}>BYUND</span>
           </Link>
 
-          {/* Center nav — desktop */}
-          <nav style={{ display: "none", alignItems: "center", gap: "2px" }} className="md-nav">
-            {/* Products dropdown trigger */}
+          {/* Center nav — desktop only */}
+          <nav style={{ display: "none", alignItems: "center", gap: "2px" }} className="hdr-nav">
             <div style={{ position: "relative" }} ref={dropdownRef}>
               <button
-                className="btn-ghost-nav btn"
+                className="btn btn-ghost-nav"
                 style={{ display: "flex", alignItems: "center", gap: "5px", background: productsOpen ? "var(--surface-1)" : "transparent" }}
                 onClick={() => setProductsOpen(p => !p)}
               >
@@ -169,21 +160,19 @@ export default function Header() {
               </button>
               {productsOpen && <ProductsDropdown onClose={() => setProductsOpen(false)} />}
             </div>
-
             <Link href="/company" className="btn btn-ghost-nav">Company</Link>
             <Link href="/#pricing" className="btn btn-ghost-nav">Pricing</Link>
           </nav>
 
-          {/* Right — desktop */}
-          <div style={{ display: "none", alignItems: "center", gap: "10px" }} className="md-right">
+          {/* Right — desktop only */}
+          <div style={{ display: "none", alignItems: "center", gap: "10px" }} className="hdr-right">
             <ThemeToggle />
             <Link href="/signin" className="btn btn-ghost btn-sm">Sign in</Link>
             <Link href="/#waitlist" className="btn btn-primary btn-sm">Get Early Access</Link>
           </div>
 
-          {/* Mobile right */}
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }} className="mobile-controls">
-            <ThemeToggle />
+          {/* Mobile: hamburger only */}
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }} className="hdr-mobile">
             <button
               onClick={() => setMobileOpen(o => !o)}
               style={{
@@ -200,20 +189,14 @@ export default function Header() {
         </div>
       </header>
 
-      {/* Mobile fullscreen menu */}
+      {/* Mobile fullscreen overlay */}
       {mobileOpen && (
         <div className="mobile-menu">
-          {/* Nav links */}
           <div style={{ marginBottom: "8px" }}>
             <p className="label" style={{ padding: "12px 8px 8px", marginBottom: "4px" }}>Products</p>
             {PRODUCTS.map(p => (
-              <Link key={p.name} href={p.href}
-                onClick={() => setMobileOpen(false)}
-                style={{
-                  display: "flex", alignItems: "center", gap: "14px",
-                  padding: "14px 8px", borderBottom: "1px solid var(--border)",
-                  textDecoration: "none",
-                }}
+              <Link key={p.name} href={p.href} onClick={() => setMobileOpen(false)}
+                style={{ display: "flex", alignItems: "center", gap: "14px", padding: "14px 8px", borderBottom: "1px solid var(--border)", textDecoration: "none" }}
               >
                 <div style={{
                   width: "36px", height: "36px", borderRadius: "10px", flexShrink: 0,
@@ -233,28 +216,30 @@ export default function Header() {
           </div>
 
           <div style={{ marginBottom: "8px" }}>
-            <p className="label" style={{ padding: "12px 8px 8px" }}>Company</p>
-            {[{ label: "About", href: "/company" }, { label: "Pricing", href: "/#pricing" }].map(l => (
-              <Link key={l.label} href={l.href}
-                onClick={() => setMobileOpen(false)}
-                style={{
-                  display: "block", padding: "14px 8px",
-                  borderBottom: "1px solid var(--border)",
-                  fontSize: "15px", fontWeight: 500, color: "var(--text-2)",
-                }}
+            <p className="label" style={{ padding: "12px 8px 8px" }}>Navigate</p>
+            {[
+              { label: "Company", href: "/company" },
+              { label: "Pricing", href: "/#pricing" },
+              { label: "Careers", href: "/careers" },
+              { label: "Contact", href: "/contact" },
+            ].map(l => (
+              <Link key={l.label} href={l.href} onClick={() => setMobileOpen(false)}
+                style={{ display: "block", padding: "14px 8px", borderBottom: "1px solid var(--border)", fontSize: "15px", fontWeight: 500, color: "var(--text-2)" }}
               >
                 {l.label}
               </Link>
             ))}
           </div>
 
+          {/* Theme toggle in mobile menu */}
+          <div style={{ padding: "16px 8px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--border)" }}>
+            <span style={{ fontSize: "15px", fontWeight: 500, color: "var(--text-2)" }}>Appearance</span>
+            <ThemeToggle />
+          </div>
+
           <div style={{ marginTop: "auto", paddingTop: "32px", display: "flex", flexDirection: "column", gap: "10px" }}>
-            <Link href="/signin" className="btn btn-ghost btn-lg" onClick={() => setMobileOpen(false)} style={{ justifyContent: "center" }}>
-              Sign in
-            </Link>
-            <Link href="/#waitlist" className="btn btn-primary btn-lg" onClick={() => setMobileOpen(false)} style={{ justifyContent: "center" }}>
-              Get Early Access
-            </Link>
+            <Link href="/signin" className="btn btn-ghost btn-lg" onClick={() => setMobileOpen(false)} style={{ justifyContent: "center" }}>Sign in</Link>
+            <Link href="/#waitlist" className="btn btn-primary btn-lg" onClick={() => setMobileOpen(false)} style={{ justifyContent: "center" }}>Get Early Access</Link>
           </div>
 
           <p style={{ textAlign: "center", fontSize: "12px", color: "var(--text-3)", marginTop: "24px" }}>
@@ -263,15 +248,11 @@ export default function Header() {
         </div>
       )}
 
-      {/* CSS to show desktop elements at md breakpoint */}
       <style>{`
         @media (min-width: 768px) {
-          .md-nav { display: flex !important; }
-          .md-right { display: flex !important; }
-          .mobile-controls button:last-child { display: none !important; }
-        }
-        @media (max-width: 767px) {
-          .mobile-controls { display: flex !important; }
+          .hdr-nav   { display: flex !important; }
+          .hdr-right { display: flex !important; }
+          .hdr-mobile { display: none !important; }
         }
       `}</style>
     </>

@@ -5,313 +5,194 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "@/components/ui/Button";
+import { Eye, EyeOff, RefreshCw, Check } from "lucide-react";
 
-const MIN_PASSWORD_LENGTH = 8;
+const MIN = 8;
 
-function getPasswordRequirements(password: string) {
-  const hasMinLength = password.length >= MIN_PASSWORD_LENGTH;
-  const hasLower = /[a-z]/.test(password);
-  const hasUpper = /[A-Z]/.test(password);
-  const hasNumber = /[0-9]/.test(password);
-  const hasSpecial = /[^A-Za-z0-9]/.test(password);
-
-  return { hasMinLength, hasLower, hasUpper, hasNumber, hasSpecial };
+function reqs(pw: string) {
+  return {
+    len:     pw.length >= MIN,
+    lower:   /[a-z]/.test(pw),
+    upper:   /[A-Z]/.test(pw),
+    number:  /[0-9]/.test(pw),
+    special: /[^A-Za-z0-9]/.test(pw),
+  };
 }
 
-const registerSchema = z.object({
-  name: z.string().min(1, "Enter a name.").max(80, "Name is too long."),
-  email: z
-    .string()
-    .email("Enter a valid email address.")
-    .transform((s) => s.toLowerCase().trim()),
-  password: z
-    .string()
-    .min(MIN_PASSWORD_LENGTH, `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`)
-    .max(200, "Password is too long.")
-    .superRefine((val, ctx) => {
-      const req = getPasswordRequirements(val);
-      if (!req.hasLower || !req.hasUpper || !req.hasNumber || !req.hasSpecial) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Password must include uppercase, lowercase, a number, and a special character.",
-        });
+function score(pw: string) {
+  if (!pw) return 0;
+  const r = reqs(pw);
+  let s = 0;
+  if (r.len) s++;
+  if (r.lower && r.upper) s++;
+  if (r.number && r.special) s++;
+  return Math.min(s, 3);
+}
+
+function genPassword(len = 14) {
+  const lo = "abcdefghijklmnopqrstuvwxyz";
+  const up = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const nu = "0123456789";
+  const sp = "!@#$%^&*()_+-=[]{}|;:,.<>?";
+  const all = lo + up + nu + sp;
+  let pw = lo[Math.floor(Math.random() * lo.length)] + up[Math.floor(Math.random() * up.length)] + nu[Math.floor(Math.random() * nu.length)] + sp[Math.floor(Math.random() * sp.length)];
+  for (let i = pw.length; i < len; i++) pw += all[Math.floor(Math.random() * all.length)];
+  return pw.split("").sort(() => Math.random() - 0.5).join("");
+}
+
+const schema = z.object({
+  name:     z.string().min(1, "Enter your name.").max(80),
+  email:    z.string().email("Enter a valid email address.").transform(s => s.toLowerCase().trim()),
+  password: z.string().min(MIN, `At least ${MIN} characters.`).max(200)
+    .superRefine((v, ctx) => {
+      const r = reqs(v);
+      if (!r.lower || !r.upper || !r.number || !r.special) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Include uppercase, lowercase, a number, and a special character." });
       }
     }),
 });
 
-type RegisterValues = z.infer<typeof registerSchema>;
+type Values = z.infer<typeof schema>;
 
-function getPasswordScore(password: string): number {
-  if (!password) return 0;
-
-  const req = getPasswordRequirements(password);
-  let score = 0;
-
-  if (req.hasMinLength) score += 1;
-  if (req.hasLower && req.hasUpper) score += 1;
-  if (req.hasNumber && req.hasSpecial) score += 1;
-
-  return Math.min(score, 3);
-}
-
-function getPasswordLabel(score: number): string {
-  if (score === 0) return "";
-  if (score === 1) return "Too weak";
-  if (score === 2) return "Could be stronger";
-  return "Strong";
-}
-
-function getPasswordColor(score: number): string {
-  if (score <= 1) return "text-[#ef4444]";
-  if (score === 2) return "text-[#f97316]";
-  return "text-[#16a34a]";
-}
-
-function getSegmentClass(index: number, score: number, hasValue: boolean): string {
-  if (!hasValue) return "flex-1 h-1 rounded-full bg-border";
-
-  if (score <= 1) {
-    return index === 0 ? "flex-1 h-1 rounded-full bg-[#ef4444]" : "flex-1 h-1 rounded-full bg-border";
-  }
-
-  if (score === 2) {
-    return index <= 1 ? "flex-1 h-1 rounded-full bg-[#f97316]" : "flex-1 h-1 rounded-full bg-border";
-  }
-
-  return "flex-1 h-1 rounded-full bg-[#16a34a]";
-}
-
-function generateStrongPassword(length = 14): string {
-  const lowercase = "abcdefghijklmnopqrstuvwxyz";
-  const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  const numbers = "0123456789";
-  const specials = "!@#$%^&*()_+-=[]{}|;:,.<>?";
-
-  const all = lowercase + uppercase + numbers + specials;
-
-  let password = "";
-  password += lowercase[Math.floor(Math.random() * lowercase.length)];
-  password += uppercase[Math.floor(Math.random() * uppercase.length)];
-  password += numbers[Math.floor(Math.random() * numbers.length)];
-  password += specials[Math.floor(Math.random() * specials.length)];
-
-  for (let i = password.length; i < length; i++) {
-    password += all[Math.floor(Math.random() * all.length)];
-  }
-
-  return password
-    .split("")
-    .sort(() => Math.random() - 0.5)
-    .join("");
-}
-
-function safeNextPath(raw: string) {
-  if (!raw) return "/dashboard";
-  if (!raw.startsWith("/")) return "/dashboard";
-  if (raw.startsWith("//")) return "/dashboard";
+function safeNext(raw: string) {
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return "/dashboard";
   return raw;
 }
 
+const input = {
+  display: "block", width: "100%", padding: "12px 16px",
+  background: "var(--surface-1)", border: "1px solid var(--border-med)",
+  borderRadius: "10px", fontSize: "14px", color: "var(--text-1)",
+  outline: "none", fontFamily: "var(--font-public-sans), system-ui, sans-serif",
+  transition: "border-color 0.2s ease, box-shadow 0.2s ease",
+} as const;
+const inputErr = { ...input, borderColor: "var(--danger)" } as const;
+const label = { display: "block", fontSize: "13px", fontWeight: 600 as const, color: "var(--text-2)", marginBottom: "7px" };
+
+function onFocus(e: React.FocusEvent<HTMLInputElement>) {
+  e.target.style.borderColor = "var(--brand)";
+  e.target.style.boxShadow = "0 0 0 3px var(--brand-sub)";
+}
+function onBlur(hasErr: boolean) {
+  return (e: React.FocusEvent<HTMLInputElement>) => {
+    e.target.style.borderColor = hasErr ? "var(--danger)" : "var(--border-med)";
+    e.target.style.boxShadow = "none";
+  };
+}
+
+const SCORE_COLORS = ["", "var(--danger)", "var(--warning)", "var(--success)"];
+const SCORE_LABELS = ["", "Too weak", "Getting there", "Strong ✓"];
+
 export function RegisterForm({ nextPath }: { nextPath: string }) {
-  const [showPassword, setShowPassword] = useState(false);
+  const [show, setShow] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const safe = useMemo(() => safeNext(nextPath), [nextPath]);
 
-  const safeNext = useMemo(() => safeNextPath(nextPath), [nextPath]);
-
-  const {
-    register,
-    handleSubmit,
-    watch,
-    setValue,
-    formState: { errors, isSubmitting },
-  } = useForm<RegisterValues>({
-    resolver: zodResolver(registerSchema),
+  const { register, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm<Values>({
+    resolver: zodResolver(schema),
     defaultValues: { name: "", email: "", password: "" },
   });
 
-  // eslint-disable-next-line react-hooks/incompatible-library
-  const password = watch("password") || "";
-  const passwordScore = getPasswordScore(password);
-  const passwordLabel = getPasswordLabel(passwordScore);
-  const hasPasswordValue = password.length > 0;
-  const requirements = getPasswordRequirements(password);
+  const pw = watch("password") || "";
+  const sc = score(pw);
+  const r  = reqs(pw);
 
-  const baseInput =
-    "block w-full rounded-md border bg-white px-3 py-2 text-sm outline-none ring-0 transition-colors";
-  const normalInput = baseInput + " border-border focus:border-accent focus:ring-1 focus:ring-accent";
-  const errorInput =
-    baseInput + " border-[#ef4444] focus:border-[#ef4444] focus:ring-1 focus:ring-[#ef4444]";
-
-  async function onSubmit(values: RegisterValues) {
+  async function onSubmit(values: Values) {
     setServerError(null);
-
     const res = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "same-origin",
-      body: JSON.stringify(values),
+      method: "POST", headers: { "Content-Type": "application/json" },
+      credentials: "same-origin", body: JSON.stringify(values),
     });
-
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      setServerError(data?.error ?? "Registration failed. Please try again.");
-      return;
-    }
-
-    // ✅ Always send new merchants into onboarding first
-    window.location.assign(`/onboarding?next=${encodeURIComponent(safeNext)}`);
-  }
-
-  function handleGeneratePassword() {
-    const generated = generateStrongPassword(14);
-    setShowPassword(true);
-    setValue("password", generated, { shouldValidate: true, shouldDirty: true });
+    if (!res.ok) { setServerError(data?.error ?? "Registration failed. Please try again."); return; }
+    window.location.assign(`/onboarding?next=${encodeURIComponent(safe)}`);
   }
 
   return (
-    <form className="mt-6 space-y-4" onSubmit={handleSubmit(onSubmit)} noValidate>
+    <form onSubmit={handleSubmit(onSubmit)} noValidate style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
       {serverError && (
-        <div className="rounded-xl border border-[#fecaca] bg-[#fef2f2] px-3 py-2 text-xs text-[#991b1b]">
+        <div style={{ padding: "12px 16px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: "10px", fontSize: "13px", color: "var(--danger)" }}>
           {serverError}
         </div>
       )}
 
       {/* Name */}
-      <div className="space-y-1.5">
-        <label htmlFor="name" className="text-sm font-medium text-foreground">
-          Name
-        </label>
-        <input
-          id="name"
-          type="text"
-          autoComplete="name"
-          {...register("name")}
-          className={errors.name ? errorInput : normalInput}
-          placeholder="NIPPY Studio, Sam'Alia, Chinedu Okafor…"
-        />
-        {errors.name && <p className="text-xs text-[#ef4444]">{errors.name.message}</p>}
+      <div>
+        <label style={label}>Full name</label>
+        <input type="text" autoComplete="name" placeholder="Your name or company name" {...register("name")}
+          style={errors.name ? inputErr : input} onFocus={onFocus} onBlur={onBlur(!!errors.name)} />
+        {errors.name && <p style={{ fontSize: "12px", color: "var(--danger)", marginTop: "5px" }}>{errors.name.message}</p>}
       </div>
 
       {/* Email */}
-      <div className="space-y-1.5">
-        <label htmlFor="email" className="text-sm font-medium text-foreground">
-          Email address
-        </label>
-        <input
-          id="email"
-          type="email"
-          autoComplete="email"
-          {...register("email")}
-          className={errors.email ? errorInput : normalInput}
-          placeholder="you@example.com"
-        />
-        {errors.email && <p className="text-xs text-[#ef4444]">{errors.email.message}</p>}
+      <div>
+        <label style={label}>Email address</label>
+        <input type="email" autoComplete="email" placeholder="you@company.com" {...register("email")}
+          style={errors.email ? inputErr : input} onFocus={onFocus} onBlur={onBlur(!!errors.email)} />
+        {errors.email && <p style={{ fontSize: "12px", color: "var(--danger)", marginTop: "5px" }}>{errors.email.message}</p>}
       </div>
 
       {/* Password */}
-      <div className="space-y-1.5">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex flex-col">
-            <label htmlFor="password" className="text-sm font-medium text-foreground">
-              Password
-            </label>
-            {hasPasswordValue && (
-              <span className={`text-xs font-medium ${getPasswordColor(passwordScore)}`}>
-                {passwordLabel}
-              </span>
-            )}
-          </div>
-          <button type="button" onClick={handleGeneratePassword} className="text-action text-[11px]">
-            Generate strong password
+      <div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "7px" }}>
+          <span style={label}>Password</span>
+          <button type="button" onClick={() => { setValue("password", genPassword(14), { shouldValidate: true }); setShow(true); }}
+            style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "11px", color: "var(--brand-hi)", fontWeight: 600, background: "none", border: "none", cursor: "pointer" }}>
+            <RefreshCw size={11} /> Generate
           </button>
         </div>
-
-        <div className="relative">
-          <input
-            id="password"
-            type={showPassword ? "text" : "password"}
-            autoComplete="new-password"
-            {...register("password")}
-            className={(errors.password ? errorInput : normalInput) + " pr-10"}
-            placeholder="Create a strong password"
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword((v) => !v)}
-            className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted hover:text-foreground focus:outline-none"
-            aria-label={showPassword ? "Hide password" : "Show password"}
-          >
-            <svg
-              aria-hidden="true"
-              className="h-4 w-4"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.75"
-            >
-              <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7Z" />
-              <circle cx="12" cy="12" r="3" />
-            </svg>
+        <div style={{ position: "relative" }}>
+          <input type={show ? "text" : "password"} autoComplete="new-password" placeholder="Create a strong password" {...register("password")}
+            style={{ ...(errors.password ? inputErr : input), paddingRight: "44px" }} onFocus={onFocus} onBlur={onBlur(!!errors.password)} />
+          <button type="button" onClick={() => setShow(v => !v)}
+            style={{ position: "absolute", insetInlineEnd: "12px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", display: "flex", padding: "4px" }}>
+            {show ? <EyeOff size={16} /> : <Eye size={16} />}
           </button>
         </div>
 
         {/* Strength bar */}
-        <div className="mt-2 flex gap-1">
-          {[0, 1, 2].map((index) => (
-            <div key={index} className={getSegmentClass(index, passwordScore, hasPasswordValue)} />
-          ))}
-        </div>
+        {pw && (
+          <div style={{ marginTop: "10px" }}>
+            <div style={{ display: "flex", gap: "4px", marginBottom: "6px" }}>
+              {[1, 2, 3].map(i => (
+                <div key={i} style={{
+                  flex: 1, height: "3px", borderRadius: "2px",
+                  background: i <= sc ? SCORE_COLORS[sc] : "var(--border-med)",
+                  transition: "background 0.3s ease",
+                }} />
+              ))}
+            </div>
+            <p style={{ fontSize: "11px", color: SCORE_COLORS[sc] || "var(--text-3)", fontWeight: 600 }}>{SCORE_LABELS[sc]}</p>
+          </div>
+        )}
 
-        {/* Requirements checklist */}
-        <ul className="mt-2 space-y-1 text-[11px] text-muted">
-          <li className="flex items-center gap-2">
-            <span
-              className={
-                requirements.hasMinLength
-                  ? "h-1.5 w-1.5 rounded-full bg-[#16a34a]"
-                  : "h-1.5 w-1.5 rounded-full bg-border"
-              }
-            />
-            <span>At least {MIN_PASSWORD_LENGTH} characters</span>
-          </li>
-          <li className="flex items-center gap-2">
-            <span
-              className={
-                requirements.hasLower && requirements.hasUpper
-                  ? "h-1.5 w-1.5 rounded-full bg-[#16a34a]"
-                  : "h-1.5 w-1.5 rounded-full bg-border"
-              }
-            />
-            <span>Uppercase and lowercase letters</span>
-          </li>
-          <li className="flex items-center gap-2">
-            <span
-              className={
-                requirements.hasNumber && requirements.hasSpecial
-                  ? "h-1.5 w-1.5 rounded-full bg-[#16a34a]"
-                  : "h-1.5 w-1.5 rounded-full bg-border"
-              }
-            />
-            <span>A number and a special character</span>
-          </li>
+        {/* Requirements */}
+        <ul style={{ listStyle: "none", marginTop: "10px", display: "flex", flexDirection: "column", gap: "6px" }}>
+          {[
+            { ok: r.len,                label: `At least ${MIN} characters` },
+            { ok: r.lower && r.upper,   label: "Uppercase & lowercase letters" },
+            { ok: r.number && r.special,label: "Number & special character" },
+          ].map(item => (
+            <li key={item.label} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "11px", color: item.ok ? "var(--success)" : "var(--text-3)" }}>
+              <div style={{ width: "14px", height: "14px", borderRadius: "50%", flexShrink: 0, background: item.ok ? "rgba(16,185,129,0.15)" : "var(--surface-2)", border: `1px solid ${item.ok ? "rgba(16,185,129,0.3)" : "var(--border)"}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                {item.ok && <Check size={8} color="var(--success)" />}
+              </div>
+              {item.label}
+            </li>
+          ))}
         </ul>
 
-        {errors.password && <p className="mt-2 text-xs text-[#ef4444]">{errors.password.message}</p>}
+        {errors.password && <p style={{ fontSize: "12px", color: "var(--danger)", marginTop: "6px" }}>{errors.password.message}</p>}
       </div>
 
-      <div className="pt-2">
-        <Button type="submit" className="w-full justify-center" disabled={isSubmitting}>
-          {isSubmitting ? "Creating account…" : "Create account"}
-        </Button>
-      </div>
+      <button type="submit" disabled={isSubmitting} className="btn btn-primary btn-lg"
+        style={{ width: "100%", justifyContent: "center", marginTop: "4px" }}>
+        {isSubmitting ? "Creating account…" : "Create account"}
+      </button>
 
-      <p className="mt-4 text-xs text-muted">
-        Already on BYUND?{" "}
-        <Link href={`/signin?next=${encodeURIComponent(safeNext)}`} className="text-action">
-          Sign in instead
-        </Link>
-        .
+      <p style={{ textAlign: "center", fontSize: "13px", color: "var(--text-3)" }}>
+        Already have an account?{" "}
+        <Link href={`/signin?next=${encodeURIComponent(safe)}`} style={{ color: "var(--brand-hi)", fontWeight: 600 }}>Sign in</Link>
       </p>
     </form>
   );

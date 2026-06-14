@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 100" width="420" height="100">
+  <defs>
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#b8acfe"/>
+      <stop offset="100%" stop-color="#4f3dd4"/>
+    </linearGradient>
+  </defs>
+  <!-- Icon mark -->
+  <rect width="100" height="100" rx="23" fill="url(#bg-grad)"/>
+  <path d="M28 26 h26 a20 20 0 0 1 0 40 H28 Z" fill="white" fill-opacity="0.93"/>
+  <path d="M28 56 h28 a22 22 0 0 1 0 44 H28 Z" fill="white" fill-opacity="0.44"/>
+  <!-- BYUND wordmark -->
+  <text
+    x="120" y="72"
+    font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif"
+    font-size="54"
+    font-weight="800"
+    letter-spacing="-3"
+    fill="#0a0b10"
+  >BYUND</text>
+</svg>
