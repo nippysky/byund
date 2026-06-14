@@ -1,0 +1,29 @@
+# ── Dependencies ──────────────────────────────────────────
+node_modules
+
+# ── Next.js ───────────────────────────────────────────────
+.next
+out
+
+# ── Environment ───────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+.env.production
+
+# ── Prisma generated ──────────────────────────────────────
+prisma/generated/
+
+# ── File uploads (stored on server disk) ──────────────────
+uploads/
+
+# ── Build artifacts ───────────────────────────────────────
+*.tsbuildinfo
+dist
+
+# ── OS ────────────────────────────────────────────────────
+.DS_Store
+*.pem
+
+# ── Logs ──────────────────────────────────────────────────
+*.log

@@ -1,0 +1,247 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum MemberRole {
+  OWNER
+  ADMIN
+  ANALYST
+  VIEWER
+}
+
+enum AssetType {
+  SERVER
+  DATABASE
+  SSL_CERT
+  DOMAIN
+  API_KEY
+  CLOUD
+  STORAGE
+  NETWORK
+  SERVICE
+}
+
+enum Criticality {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ReviewStatus {
+  UPCOMING
+  DUE
+  OVERDUE
+  IN_PROGRESS
+  COMPLETED
+  SKIPPED
+}
+
+enum ReviewOutcome {
+  PASSED
+  MINOR_ISSUES
+  MAJOR_ISSUES
+}
+
+enum FindingStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  WONT_FIX
+}
+
+enum FindingSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  avatarUrl    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  workspaceMembers WorkspaceMember[]
+  reviewsAssigned  Review[]          @relation("ReviewAssignee")
+  findingsAssigned Finding[]         @relation("FindingAssignee")
+  evidenceUploaded Evidence[]
+  auditLogs        AuditLog[]
+
+  @@map("users")
+}
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  logoUrl   String?
+  industry  String?
+  timezone  String   @default("UTC")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members   WorkspaceMember[]
+  assets    Asset[]
+  reviews   Review[]
+  findings  Finding[]
+  evidence  Evidence[]
+  auditLogs AuditLog[]
+  settings  WorkspaceSettings?
+
+  @@map("workspaces")
+}
+
+model WorkspaceMember {
+  id          String     @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        MemberRole @default(VIEWER)
+  createdAt   DateTime   @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@map("workspace_members")
+}
+
+model WorkspaceSettings {
+  id                             String   @id @default(cuid())
+  workspaceId                    String   @unique
+  defaultReviewCycleDays         Int      @default(90)
+  autoRaiseFindingsOnMajorIssues Boolean  @default(true)
+  requireEvidenceForReview       Boolean  @default(false)
+  notifyOnUpcomingReview         Boolean  @default(true)
+  notifyDaysBeforeReview         Int      @default(7)
+  updatedAt                      DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("workspace_settings")
+}
+
+model Asset {
+  id              String      @id @default(cuid())
+  workspaceId     String
+  name            String
+  type            AssetType
+  criticality     Criticality
+  description     String?
+  environment     String?
+  ownerId         String?
+  reviewCycleDays Int         @default(90)
+  lastReviewedAt  DateTime?
+  nextReviewDue   DateTime?
+  archivedAt      DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  workspace Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  reviews   Review[]
+  findings  Finding[]
+  evidence  Evidence[]
+
+  @@index([workspaceId, nextReviewDue])
+  @@map("assets")
+}
+
+model Review {
+  id          String         @id @default(cuid())
+  workspaceId String
+  assetId     String
+  assigneeId  String?
+  scheduledAt DateTime
+  dueAt       DateTime
+  startedAt   DateTime?
+  completedAt DateTime?
+  status      ReviewStatus   @default(UPCOMING)
+  outcome     ReviewOutcome?
+  notes       String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  workspace Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  asset     Asset      @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  assignee  User?      @relation("ReviewAssignee", fields: [assigneeId], references: [id])
+  findings  Finding[]
+  evidence  Evidence[]
+
+  @@index([workspaceId, dueAt])
+  @@map("reviews")
+}
+
+model Finding {
+  id          String          @id @default(cuid())
+  workspaceId String
+  assetId     String?
+  reviewId    String?
+  assigneeId  String?
+  title       String
+  description String?
+  severity    FindingSeverity
+  status      FindingStatus   @default(OPEN)
+  resolution  String?
+  resolvedAt  DateTime?
+  dueAt       DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  workspace Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  asset     Asset?     @relation(fields: [assetId], references: [id])
+  review    Review?    @relation(fields: [reviewId], references: [id])
+  assignee  User?      @relation("FindingAssignee", fields: [assigneeId], references: [id])
+  evidence  Evidence[]
+
+  @@index([workspaceId, status])
+  @@map("findings")
+}
+
+model Evidence {
+  id          String   @id @default(cuid())
+  workspaceId String
+  assetId     String?
+  reviewId    String?
+  findingId   String?
+  uploaderId  String
+  fileName    String
+  filePath    String
+  mimeType    String
+  fileSize    Int
+  description String?
+  createdAt   DateTime @default(now())
+
+  workspace  Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  asset      Asset?    @relation(fields: [assetId], references: [id])
+  review     Review?   @relation(fields: [reviewId], references: [id])
+  finding    Finding?  @relation(fields: [findingId], references: [id])
+  uploadedBy User      @relation(fields: [uploaderId], references: [id])
+
+  @@map("evidence")
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  workspaceId String
+  actorId     String?
+  action      String
+  targetType  String?
+  targetId    String?
+  targetLabel String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  actor     User?     @relation(fields: [actorId], references: [id])
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@map("audit_logs")
+}

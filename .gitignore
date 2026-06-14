@@ -1,43 +1,53 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-/node_modules
-/.pnp
+# ── Dependencies ──────────────────────────────────────────
+node_modules
+apps/*/node_modules
+packages/*/node_modules
+.pnp
 .pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
 
-# testing
-/coverage
+# ── Package manager artifacts ──────────────────────────────
+.pnpm-store
+pnpm-lock.yaml
+# Note: package-lock.json IS committed (we use npm)
 
-# next.js
-/.next/
-/out/
+# ── Next.js build output ───────────────────────────────────
+.next
+out
+build
+dist
 
-# production
-/build
+# ── Environment files ─────────────────────────────────────
+.env
+.env.local
+.env.*.local
+.env.production
+# Keep .env.example files — they document required vars
 
-# misc
+# ── Prisma generated output ───────────────────────────────
+*.tsbuildinfo
+lib/generated/
+apps/*/lib/generated/
+
+# ── Uploads (server-side file storage) ───────────────────
+apps/governance/uploads/
+
+# ── OS & editor ───────────────────────────────────────────
 .DS_Store
+Thumbs.db
 *.pem
+.idea
+.vscode/*
+!.vscode/extensions.json
 
-# debug
+# ── Logs ──────────────────────────────────────────────────
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
+# ── Vercel ────────────────────────────────────────────────
 .vercel
 
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
-/lib/generated/prisma
+# ── Testing ───────────────────────────────────────────────
+coverage

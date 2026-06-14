@@ -1,0 +1,37 @@
+import { NextRequest, NextResponse } from "next/server";
+import { jwtVerify } from "jose";
+
+const SECRET = new TextEncoder().encode(
+  process.env.JWT_SECRET ?? "byund-governance-secret-change-in-production"
+);
+const COOKIE = "byund_session";
+const PUBLIC = ["/login", "/register", "/api/auth/login", "/api/auth/register"];
+
+export async function proxy(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+
+  if (PUBLIC.some(p => pathname.startsWith(p))) return NextResponse.next();
+  if (pathname.startsWith("/_next") || pathname.startsWith("/favicon")) return NextResponse.next();
+
+  const token = req.cookies.get(COOKIE)?.value;
+
+  if (!token) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/login";
+    url.searchParams.set("from", pathname);
+    return NextResponse.redirect(url);
+  }
+
+  try {
+    await jwtVerify(token, SECRET);
+    return NextResponse.next();
+  } catch {
+    const url = req.nextUrl.clone();
+    url.pathname = "/login";
+    return NextResponse.redirect(url);
+  }
+}
+
+export const config = {
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+};

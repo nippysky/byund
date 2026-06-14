@@ -4,8 +4,8 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import { config as dotenvConfig } from "dotenv";
 
-// Load .env so DATABASE_URL is available to Prisma CLI
-dotenvConfig({ path: ".env" });
+// Prisma CLI doesn't load .env.local — load it manually so DATABASE_URL is available
+dotenvConfig({ path: ".env.local" });
 
 export default defineConfig({
   earlyAccess: true,

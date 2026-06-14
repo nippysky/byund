@@ -1,0 +1,62 @@
+version: "3.9"
+
+# ─────────────────────────────────────────────────────────────────
+# BYUND — Local Development Stack
+# Run: docker compose up -d
+# ─────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── PostgreSQL ───────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: byund-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: byund
+      POSTGRES_PASSWORD: byund_dev_secret
+      POSTGRES_DB: byund
+    ports:
+      - "5432:5432"
+    volumes:
+      - byund_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U byund"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis ────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: byund-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - byund_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── MinIO (S3-compatible — evidence file storage in dev) ─────
+  minio:
+    image: minio/minio:latest
+    container_name: byund-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: byund_access_key
+      MINIO_ROOT_PASSWORD: byund_secret_key
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Console UI → http://localhost:9001
+    volumes:
+      - byund_minio_data:/data
+
+volumes:
+  byund_postgres_data:
+  byund_redis_data:
+  byund_minio_data:
