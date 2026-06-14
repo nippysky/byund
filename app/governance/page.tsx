@@ -35,7 +35,7 @@ const FEATURES = [
   {
     icon: <BarChart3 size={22} />,
     title: "Asset Register",
-    desc: "A single, searchable register for every asset your organization owns. 9 types, risk ratings, environments, and ownership fields — all in one place.",
+    desc: "A single, searchable register for every asset your organization owns. 9 types, risk ratings, environments, and ownership — all in one place.",
     bullets: ["Technical & business owners", "Risk ratings (Critical → Info)", "Environment tagging", "Custom metadata fields"],
   },
   {
@@ -80,33 +80,37 @@ const WORKFLOW = [
 
 export default function GovernancePage() {
   return (
-    <div style={{ minHeight: "100vh", background: "var(--background)", color: "var(--text-primary)" }}>
+    <div style={{ minHeight: "100vh", background: "var(--bg)", color: "var(--text-1)" }}>
       <Header />
 
       {/* Hero */}
       <section style={{ paddingTop: "120px", paddingBottom: "80px", position: "relative", overflow: "hidden" }}>
         <div className="glow-blob" style={{ width: "600px", height: "600px", top: "-150px", left: "50%", transform: "translateX(-50%)" }} />
-        <div style={{
-          position: "absolute", inset: 0, pointerEvents: "none",
-          backgroundImage: "linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.022) 1px, transparent 1px)",
-          backgroundSize: "56px 56px",
-          maskImage: "radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 100%)",
-        }} />
+        <div className="grid-bg" />
 
         <div className="container" style={{ position: "relative", zIndex: 1 }}>
           <motion.div variants={FADE(0)} initial="hidden" animate="show" style={{ marginBottom: "20px" }}>
-            <span className="badge badge-brand">BYUND Governance</span>
+            <span style={{
+              display: "inline-flex", alignItems: "center", gap: "7px",
+              fontSize: "11px", fontWeight: 700, color: "var(--brand-hi)",
+              background: "var(--brand-sub2)", border: "1px solid rgba(114,96,251,0.3)",
+              borderRadius: "100px", padding: "5px 14px",
+              letterSpacing: "0.06em", textTransform: "uppercase" as const,
+            }}>
+              <ShieldCheck size={11} /> BYUND Governance
+            </span>
           </motion.div>
 
           <motion.h1 variants={FADE(1)} initial="hidden" animate="show"
-            style={{ fontSize: "clamp(40px, 6vw, 76px)", fontWeight: 800, letterSpacing: "-0.04em", lineHeight: 1.0, maxWidth: "760px", marginBottom: "24px" }}
+            className="display-lg"
+            style={{ maxWidth: "760px", marginBottom: "24px" }}
           >
             Know what you own.<br />
-            <span className="text-gradient">Know who owns it.</span>
+            <span className="text-brand">Know who owns it.</span>
           </motion.h1>
 
           <motion.p variants={FADE(2)} initial="hidden" animate="show"
-            style={{ fontSize: "18px", color: "var(--text-secondary)", lineHeight: 1.65, maxWidth: "540px", marginBottom: "36px", letterSpacing: "-0.01em" }}
+            style={{ fontSize: "18px", color: "var(--text-2)", lineHeight: 1.7, maxWidth: "540px", marginBottom: "36px" }}
           >
             BYUND Governance is the asset ownership, review, and audit platform for modern IT teams.
             Stop managing infrastructure in spreadsheets. Start governing it properly.
@@ -115,7 +119,7 @@ export default function GovernancePage() {
           <motion.div variants={FADE(3)} initial="hidden" animate="show"
             style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginBottom: "56px" }}
           >
-            <Link href="/#waitlist" className="btn btn-primary btn-lg" style={{ gap: "8px" }}>
+            <Link href="/#waitlist" className="btn btn-primary btn-lg">
               Join the Waitlist <ArrowRight size={16} />
             </Link>
             <Link href="/#pricing" className="btn btn-ghost btn-lg">
@@ -125,18 +129,16 @@ export default function GovernancePage() {
 
           {/* Asset type pills */}
           <motion.div variants={FADE(4)} initial="hidden" animate="show">
-            <p style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "14px" }}>
-              9 asset types supported
-            </p>
+            <p className="label" style={{ marginBottom: "14px" }}>9 asset types supported</p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
               {ASSET_TYPES.map(a => (
                 <span key={a.label} style={{
                   display: "inline-flex", alignItems: "center", gap: "6px",
                   padding: "6px 14px", borderRadius: "100px",
-                  fontSize: "13px", fontWeight: 500, color: "var(--text-secondary)",
-                  background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
+                  fontSize: "13px", fontWeight: 500, color: "var(--text-2)",
+                  background: "var(--surface-1)", border: "1px solid var(--border-med)",
                 }}>
-                  <span style={{ color: "var(--brand-light)" }}>{a.icon}</span>
+                  <span style={{ color: "var(--brand-hi)" }}>{a.icon}</span>
                   {a.label}
                 </span>
               ))}
@@ -146,46 +148,46 @@ export default function GovernancePage() {
       </section>
 
       {/* Features */}
-      <section className="section">
-        <div className="divider" />
-        <div className="container" style={{ paddingTop: "96px" }}>
+      <section className="section" style={{ borderTop: "1px solid var(--border)" }}>
+        <div className="container">
           <motion.div
             initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }} transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
             style={{ textAlign: "center", maxWidth: "520px", margin: "0 auto 72px" }}
           >
-            <span className="badge badge-brand" style={{ marginBottom: "20px" }}>Core Modules</span>
-            <h2 style={{ fontSize: "clamp(30px, 4vw, 50px)", fontWeight: 800, letterSpacing: "-0.04em", marginBottom: "14px" }}>
-              Everything governance needs. Nothing it doesn&apos;t.
+            <span className="label" style={{ marginBottom: "20px", display: "block" }}>Core Modules</span>
+            <h2 className="display-md" style={{ marginBottom: "14px" }}>
+              Everything governance needs.{" "}
+              <span className="text-brand">Nothing it doesn&apos;t.</span>
             </h2>
-            <p style={{ fontSize: "16px", color: "var(--text-secondary)", lineHeight: 1.65 }}>
+            <p style={{ fontSize: "16px", color: "var(--text-2)", lineHeight: 1.7 }}>
               Six modules that work together to give your team complete visibility and control.
             </p>
           </motion.div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(1,1fr)", gap: "16px" }} className="md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid-features">
             {FEATURES.map((f, i) => (
               <motion.div key={f.title}
                 initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.15 }}
                 transition={{ delay: i * 0.08, duration: 0.55, ease: [0.23, 1, 0.32, 1] }}
-                className="glass glass-hover"
-                style={{ borderRadius: "20px", padding: "36px" }}
+                className="glass-card"
+                style={{ padding: "36px" }}
               >
                 <div style={{
                   width: "48px", height: "48px", borderRadius: "13px",
-                  background: "var(--brand-subtle2)", border: "1px solid rgba(109,86,250,0.25)",
+                  background: "var(--brand-sub2)", border: "1px solid rgba(114,96,251,0.25)",
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  color: "var(--brand-light)", marginBottom: "20px",
+                  color: "var(--brand-hi)", marginBottom: "20px",
                 }}>
                   {f.icon}
                 </div>
-                <h3 style={{ fontSize: "18px", fontWeight: 700, letterSpacing: "-0.03em", marginBottom: "10px" }}>{f.title}</h3>
-                <p style={{ fontSize: "14px", color: "var(--text-secondary)", lineHeight: 1.65, marginBottom: "20px" }}>{f.desc}</p>
+                <h3 style={{ fontSize: "18px", fontWeight: 700, letterSpacing: "-0.03em", marginBottom: "10px", color: "var(--text-1)" }}>{f.title}</h3>
+                <p style={{ fontSize: "14px", color: "var(--text-2)", lineHeight: 1.7, marginBottom: "20px" }}>{f.desc}</p>
                 <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: "8px" }}>
                   {f.bullets.map(b => (
-                    <li key={b} style={{ display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "13px", color: "var(--text-muted)" }}>
+                    <li key={b} style={{ display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "13px", color: "var(--text-3)" }}>
                       <Check size={13} color="var(--success)" style={{ marginTop: "2px", flexShrink: 0 }} /> {b}
                     </li>
                   ))}
@@ -197,19 +199,18 @@ export default function GovernancePage() {
       </section>
 
       {/* Review Workflow */}
-      <section className="section">
-        <div className="divider" />
-        <div className="container" style={{ paddingTop: "96px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "80px", alignItems: "center" }} className="lg:grid-cols-2">
+      <section className="section" style={{ borderTop: "1px solid var(--border)" }}>
+        <div className="container">
+          <div className="grid-split">
             <motion.div
               initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true, amount: 0.3 }} transition={{ duration: 0.65, ease: [0.23, 1, 0.32, 1] }}
             >
-              <span className="badge badge-brand" style={{ marginBottom: "20px" }}>Review Workflow</span>
-              <h2 style={{ fontSize: "clamp(28px, 3.5vw, 46px)", fontWeight: 800, letterSpacing: "-0.04em", marginBottom: "16px" }}>
-                Reviews that actually get completed.
+              <span className="label" style={{ marginBottom: "20px", display: "block" }}>Review Workflow</span>
+              <h2 className="display-sm" style={{ marginBottom: "16px" }}>
+                Reviews that actually<br />get completed.
               </h2>
-              <p style={{ fontSize: "16px", color: "var(--text-secondary)", lineHeight: 1.65, marginBottom: "36px" }}>
+              <p style={{ fontSize: "16px", color: "var(--text-2)", lineHeight: 1.7, marginBottom: "40px" }}>
                 BYUND turns review governance from a stressful manual process into a
                 structured, trackable workflow that managers and auditors can rely on.
               </p>
@@ -217,27 +218,26 @@ export default function GovernancePage() {
               <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
                 {WORKFLOW.map((w, i) => (
                   <div key={w.n} style={{ display: "flex", gap: "20px", position: "relative" }}>
-                    {/* Timeline line */}
                     {i < WORKFLOW.length - 1 && (
                       <div style={{
-                        position: "absolute", left: "18px", top: "44px", bottom: 0,
-                        width: "1px", background: "rgba(109,86,250,0.2)",
+                        position: "absolute", left: "17px", top: "44px", bottom: 0,
+                        width: "1px", background: "rgba(114,96,251,0.2)",
                       }} />
                     )}
                     <div style={{
-                      width: "36px", height: "36px", borderRadius: "50%", flexShrink: 0,
-                      background: i === 0 ? "var(--brand)" : "rgba(109,86,250,0.12)",
-                      border: "1px solid rgba(109,86,250,0.3)",
+                      width: "34px", height: "34px", borderRadius: "50%", flexShrink: 0,
+                      background: i === 0 ? "var(--brand)" : "var(--brand-sub2)",
+                      border: "1px solid rgba(114,96,251,0.3)",
                       display: "flex", alignItems: "center", justifyContent: "center",
                       fontSize: "12px", fontWeight: 700,
-                      color: i === 0 ? "#fff" : "var(--brand-light)",
+                      color: i === 0 ? "#fff" : "var(--brand-hi)",
                       zIndex: 1,
                     }}>
                       {w.n}
                     </div>
                     <div style={{ paddingBottom: "28px" }}>
-                      <p style={{ fontSize: "15px", fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.02em", marginBottom: "4px" }}>{w.title}</p>
-                      <p style={{ fontSize: "13px", color: "var(--text-muted)", lineHeight: 1.6 }}>{w.desc}</p>
+                      <p style={{ fontSize: "15px", fontWeight: 700, color: "var(--text-1)", letterSpacing: "-0.02em", marginBottom: "4px" }}>{w.title}</p>
+                      <p style={{ fontSize: "13px", color: "var(--text-3)", lineHeight: 1.65 }}>{w.desc}</p>
                     </div>
                   </div>
                 ))}
@@ -249,46 +249,43 @@ export default function GovernancePage() {
               initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true, amount: 0.3 }} transition={{ delay: 0.15, duration: 0.65, ease: [0.23, 1, 0.32, 1] }}
             >
-              <div className="glass" style={{ borderRadius: "20px", overflow: "hidden" }}>
-                {/* Header */}
-                <div style={{ padding: "20px 24px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", gap: "10px" }}>
-                  <Bell size={16} color="var(--brand-light)" />
-                  <span style={{ fontSize: "14px", fontWeight: 600 }}>Notifications</span>
+              <div style={{ background: "var(--surface-1)", borderRadius: "20px", overflow: "hidden", border: "1px solid var(--border-med)" }}>
+                <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "10px" }}>
+                  <Bell size={16} color="var(--brand-hi)" />
+                  <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-1)" }}>Notifications</span>
                   <span style={{ marginLeft: "auto", fontSize: "11px", fontWeight: 700, background: "var(--brand)", color: "#fff", borderRadius: "100px", padding: "2px 8px" }}>4</span>
                 </div>
-                {/* Notification items */}
                 {[
-                  { icon: "🔴", title: "Review Overdue",      sub: "postgres-primary · Q2 2026 Review",   time: "2h ago"  },
-                  { icon: "🟡", title: "Review Due in 3 days", sub: "payment-api-prod · Quarterly Review",  time: "today"   },
-                  { icon: "🟣", title: "Finding Assigned",     sub: "SSL cert vulnerability · Critical",    time: "yesterday"},
-                  { icon: "🟢", title: "Review Approved",      sub: "nginx-gateway · Manager approved",     time: "2d ago"  },
+                  { icon: "🔴", title: "Review Overdue",       sub: "postgres-primary · Q2 2026 Review",  time: "2h ago"   },
+                  { icon: "🟡", title: "Review Due in 3 days", sub: "payment-api-prod · Quarterly Review", time: "today"    },
+                  { icon: "🟣", title: "Finding Assigned",     sub: "SSL cert vulnerability · Critical",   time: "yesterday"},
+                  { icon: "🟢", title: "Review Approved",      sub: "nginx-gateway · Manager approved",    time: "2d ago"   },
                 ].map((n, i) => (
                   <div key={i} style={{
                     display: "flex", alignItems: "flex-start", gap: "14px",
                     padding: "16px 24px",
-                    borderBottom: i < 3 ? "1px solid rgba(255,255,255,0.04)" : "none",
+                    borderBottom: i < 3 ? "1px solid var(--border)" : "none",
                     background: i === 0 ? "rgba(239,68,68,0.04)" : "transparent",
                   }}>
                     <span style={{ fontSize: "18px", flexShrink: 0, lineHeight: 1 }}>{n.icon}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary)", marginBottom: "2px" }}>{n.title}</p>
-                      <p style={{ fontSize: "12px", color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{n.sub}</p>
+                      <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-1)", marginBottom: "2px" }}>{n.title}</p>
+                      <p style={{ fontSize: "12px", color: "var(--text-3)", whiteSpace: "nowrap" as const, overflow: "hidden", textOverflow: "ellipsis" }}>{n.sub}</p>
                     </div>
-                    <span style={{ fontSize: "11px", color: "var(--text-muted)", flexShrink: 0 }}>{n.time}</span>
+                    <span style={{ fontSize: "11px", color: "var(--text-3)", flexShrink: 0 }}>{n.time}</span>
                   </div>
                 ))}
               </div>
 
-              {/* Finding card below */}
-              <div className="glass" style={{ borderRadius: "16px", padding: "24px", marginTop: "16px" }}>
+              <div style={{ background: "var(--surface-1)", borderRadius: "16px", padding: "24px", marginTop: "16px", border: "1px solid var(--border-med)" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" }}>
                   <span style={{ fontSize: "12px", fontWeight: 700, color: "#ef4444", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: "6px", padding: "3px 8px" }}>CRITICAL</span>
-                  <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>Finding #F-0042</span>
+                  <span style={{ fontSize: "11px", color: "var(--text-3)" }}>Finding #F-0042</span>
                 </div>
-                <p style={{ fontSize: "15px", fontWeight: 700, letterSpacing: "-0.02em", marginBottom: "6px" }}>Expired SSL certificate on api.payment.prod</p>
-                <p style={{ fontSize: "12px", color: "var(--text-muted)", lineHeight: 1.6, marginBottom: "16px" }}>Certificate expired 14 days ago. Immediate renewal required. Assigned to DevOps team.</p>
+                <p style={{ fontSize: "15px", fontWeight: 700, letterSpacing: "-0.02em", marginBottom: "6px", color: "var(--text-1)" }}>Expired SSL certificate on api.payment.prod</p>
+                <p style={{ fontSize: "12px", color: "var(--text-3)", lineHeight: 1.65, marginBottom: "16px" }}>Certificate expired 14 days ago. Immediate renewal required. Assigned to DevOps team.</p>
                 <div style={{ display: "flex", gap: "8px" }}>
-                  <span style={{ fontSize: "11px", color: "var(--text-muted)", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "6px", padding: "4px 10px" }}>DevOps Team</span>
+                  <span style={{ fontSize: "11px", color: "var(--text-3)", background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: "6px", padding: "4px 10px" }}>DevOps Team</span>
                   <span style={{ fontSize: "11px", color: "#f59e0b", background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: "6px", padding: "4px 10px" }}>Due in 2 days</span>
                 </div>
               </div>

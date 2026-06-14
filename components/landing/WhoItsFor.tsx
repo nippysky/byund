@@ -32,28 +32,27 @@ const SEGMENTS = [
 
 export default function WhoItsFor() {
   return (
-    <section className="section">
+    <section className="section" style={{ borderTop: "1px solid var(--border)" }}>
       <div className="container">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
-          style={{ maxWidth: "560px", marginBottom: "64px" }}
+          style={{ maxWidth: "580px", marginBottom: "72px" }}
         >
-          <span className="badge badge-brand" style={{ marginBottom: "20px" }}>Built for</span>
-          <h2 style={{ fontSize: "clamp(32px, 4vw, 52px)", fontWeight: 800, letterSpacing: "-0.04em", marginBottom: "16px" }}>
-            Teams that run<br className="hidden md:block" /> real infrastructure
+          <span className="label" style={{ marginBottom: "20px", display: "block" }}>Built for</span>
+          <h2 className="display-md" style={{ marginBottom: "16px" }}>
+            Teams that run{" "}
+            <span className="text-brand">real infrastructure</span>
           </h2>
-          <p style={{ fontSize: "17px", color: "var(--text-secondary)", lineHeight: 1.65 }}>
+          <p style={{ fontSize: "17px", color: "var(--text-2)", lineHeight: 1.7 }}>
             If your team owns infrastructure and worries about what happens when an auditor asks
-            "show me your asset register", BYUND is built for you.
+            "show me your asset register" — BYUND is built for you.
           </p>
         </motion.div>
 
-        {/* Cards */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(1,1fr)", gap: "16px" }} className="md:grid-cols-2">
+        <div className="grid-2">
           {SEGMENTS.map((seg, i) => (
             <motion.div
               key={seg.title}
@@ -61,30 +60,32 @@ export default function WhoItsFor() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.2 }}
               transition={{ delay: i * 0.08, duration: 0.55, ease: [0.23, 1, 0.32, 1] }}
-              className="glass glass-hover"
-              style={{
-                borderRadius: "20px",
-                padding: "36px",
-                cursor: "default",
-              }}
+              className="glass-card"
+              style={{ padding: "40px", cursor: "default" }}
             >
-              {/* Icon */}
               <div style={{
-                width: "52px", height: "52px", borderRadius: "14px",
-                background: "var(--brand-subtle2)", border: "1px solid rgba(109,86,250,0.25)",
+                width: "54px", height: "54px", borderRadius: "14px",
+                background: "var(--brand-sub2)", border: "1px solid rgba(114,96,251,0.25)",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                color: "var(--brand-light)", marginBottom: "24px",
+                color: "var(--brand-hi)", marginBottom: "24px",
               }}>
                 {seg.icon}
               </div>
 
-              <h3 style={{ fontSize: "20px", fontWeight: 700, letterSpacing: "-0.03em", marginBottom: "10px" }}>{seg.title}</h3>
-              <p style={{ fontSize: "15px", color: "var(--text-secondary)", lineHeight: 1.65, marginBottom: "24px" }}>{seg.desc}</p>
+              <h3 style={{ fontSize: "20px", fontWeight: 700, letterSpacing: "-0.03em", marginBottom: "12px", color: "var(--text-1)" }}>
+                {seg.title}
+              </h3>
+              <p style={{ fontSize: "15px", color: "var(--text-2)", lineHeight: 1.7, marginBottom: "24px" }}>
+                {seg.desc}
+              </p>
 
-              {/* Tags */}
               <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                 {seg.tags.map(t => (
-                  <span key={t} className="badge badge-neutral">{t}</span>
+                  <span key={t} style={{
+                    fontSize: "12px", fontWeight: 600, padding: "4px 11px",
+                    borderRadius: "6px", background: "var(--surface-2)",
+                    color: "var(--text-2)", border: "1px solid var(--border-med)",
+                  }}>{t}</span>
                 ))}
               </div>
             </motion.div>

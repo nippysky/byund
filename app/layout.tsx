@@ -1,4 +1,3 @@
-// app/layout.tsx
 import type { Metadata } from "next";
 import "./globals.css";
 import { Public_Sans } from "next/font/google";
@@ -26,20 +25,20 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" data-theme="dark" suppressHydrationWarning>
+      {/* Prevent flash of wrong theme */}
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('byund-theme')||((window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark');document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body
-        className={`
-          ${publicSans.variable}
-          font-sans
-          bg-background
-          text-foreground
-          antialiased
-          min-h-screen
-        `}
+        className={`${publicSans.variable}`}
+        style={{ fontFamily: "var(--font-public-sans), system-ui, sans-serif" }}
       >
         <Providers>{children}</Providers>
       </body>

@@ -1,14 +1,14 @@
 import Link from "next/link";
 
-function BYUNDMark() {
+function Mark() {
   return (
-    <svg width="22" height="22" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="28" height="28" rx="7" fill="url(#f-grad)" />
-      <path d="M8 8h5.5a4 4 0 0 1 0 8H8V8Z" fill="white" fillOpacity="0.9" />
-      <path d="M8 16h6.5a4 4 0 0 1 0 8H8v-8Z" fill="white" fillOpacity="0.45" />
+    <svg width="26" height="26" viewBox="0 0 32 32" fill="none">
+      <rect width="32" height="32" rx="9" fill="url(#f-g2)" />
+      <path d="M9 9h6.5a4.5 4.5 0 0 1 0 9H9V9Z" fill="white" fillOpacity="0.9" />
+      <path d="M9 18h7.5a4.5 4.5 0 0 1 0 9H9v-9Z" fill="white" fillOpacity="0.42" />
       <defs>
-        <linearGradient id="f-grad" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#9b8bfb" />
+        <linearGradient id="f-g2" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#a496fd" />
           <stop offset="1" stopColor="#4f3dd4" />
         </linearGradient>
       </defs>
@@ -16,84 +16,87 @@ function BYUNDMark() {
   );
 }
 
-const LINKS = {
-  Products: [
-    { label: "BYUND Governance", href: "/governance" },
-    { label: "More coming soon", href: "#" },
-  ],
-  Company: [
-    { label: "About", href: "/company" },
-    { label: "Contact", href: "mailto:hello@nippysky.com" },
-  ],
-  Legal: [
-    { label: "Privacy Policy", href: "/privacy" },
-    { label: "Terms of Service", href: "/terms" },
-  ],
-};
+const COLS = [
+  {
+    heading: "Products",
+    links: [
+      { label: "BYUND Governance", href: "/governance" },
+      { label: "More coming soon", href: "/#waitlist" },
+    ],
+  },
+  {
+    heading: "Company",
+    links: [
+      { label: "About", href: "/company" },
+      { label: "Contact", href: "mailto:hello@nippysky.com" },
+      { label: "Careers", href: "#" },
+    ],
+  },
+  {
+    heading: "Legal",
+    links: [
+      { label: "Privacy Policy", href: "/privacy" },
+      { label: "Terms of Service", href: "/terms" },
+      { label: "Security", href: "#" },
+    ],
+  },
+];
 
 export default function Footer() {
   return (
-    <footer
-      style={{
-        borderTop: "1px solid rgba(255,255,255,0.06)",
-        padding: "64px 0 40px",
-        position: "relative",
-      }}
-    >
+    <footer style={{ borderTop: "1px solid var(--border)", paddingTop: "72px", paddingBottom: "44px" }}>
       <div className="container">
-        {/* Top row */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr",
-            gap: "48px",
-            marginBottom: "56px",
-          }}
-          className="md:grid-cols-[1.5fr_1fr_1fr_1fr]"
-        >
-          {/* Brand */}
-          <div style={{ maxWidth: "280px" }}>
-            <Link href="/" style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
-              <BYUNDMark />
-              <span style={{ fontSize: "16px", fontWeight: 700, letterSpacing: "-0.04em", color: "var(--text-primary)" }}>
-                BYUND
-              </span>
+        {/* Grid */}
+        <div className="grid-footer">
+          {/* Brand col */}
+          <div>
+            <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: "9px", marginBottom: "18px" }}>
+              <Mark />
+              <span style={{ fontSize: "15px", fontWeight: 800, letterSpacing: "-0.045em", color: "var(--text-1)" }}>BYUND</span>
             </Link>
-            <p style={{ fontSize: "14px", color: "var(--text-muted)", lineHeight: "1.7" }}>
+            <p style={{ fontSize: "14px", color: "var(--text-3)", lineHeight: 1.75, maxWidth: "240px", marginBottom: "16px" }}>
               The platform behind modern IT governance. Know what you own. Know who owns it.
             </p>
-            <p style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "12px", opacity: 0.6 }}>
+            <p style={{ fontSize: "11px", color: "var(--text-3)", opacity: 0.65, fontWeight: 600, letterSpacing: "0.03em" }}>
               A product of NIPPYSKY LIMITED
             </p>
+
+            {/* SSO note */}
+            <div style={{
+              marginTop: "24px",
+              padding: "14px 16px",
+              background: "var(--brand-sub)",
+              border: "1px solid rgba(114,96,251,0.2)",
+              borderRadius: "12px",
+              maxWidth: "260px",
+            }}>
+              <p style={{ fontSize: "12px", color: "var(--brand-hi)", fontWeight: 600, marginBottom: "4px" }}>
+                One account. All products.
+              </p>
+              <p style={{ fontSize: "11px", color: "var(--text-3)", lineHeight: 1.6 }}>
+                Sign in once to access every BYUND product — like Google, but for IT governance.
+              </p>
+            </div>
           </div>
 
-          {/* Links */}
-          {Object.entries(LINKS).map(([section, items]) => (
-            <div key={section}>
-              <p
-                style={{
-                  fontSize: "11px",
-                  fontWeight: 700,
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  color: "var(--text-muted)",
-                  marginBottom: "20px",
-                }}
-              >
-                {section}
-              </p>
+          {/* Link cols */}
+          {COLS.map(col => (
+            <div key={col.heading}>
+              <p className="label" style={{ marginBottom: "20px" }}>{col.heading}</p>
               <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: "12px" }}>
-                {items.map((item) => (
-                  <li key={item.label}>
+                {col.links.map(l => (
+                  <li key={l.label}>
                     <Link
-                      href={item.href}
+                      href={l.href}
                       style={{
                         fontSize: "14px",
-                        color: "var(--text-secondary)",
+                        color: "var(--text-2)",
                         transition: "color 0.15s ease",
                       }}
+                      onMouseEnter={e => { (e.target as HTMLElement).style.color = "var(--text-1)"; }}
+                      onMouseLeave={e => { (e.target as HTMLElement).style.color = "var(--text-2)"; }}
                     >
-                      {item.label}
+                      {l.label}
                     </Link>
                   </li>
                 ))}
@@ -102,32 +105,14 @@ export default function Footer() {
           ))}
         </div>
 
-        {/* Divider */}
         <div className="divider" />
 
-        {/* Bottom row */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            paddingTop: "28px",
-            flexWrap: "wrap",
-            gap: "12px",
-          }}
-        >
-          <p style={{ fontSize: "13px", color: "var(--text-muted)" }}>
+        {/* Bottom bar */}
+        <div style={{ paddingTop: "28px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
+          <p style={{ fontSize: "13px", color: "var(--text-3)" }}>
             © {new Date().getFullYear()} NIPPYSKY LIMITED. All rights reserved.
           </p>
-          <p
-            style={{
-              fontSize: "11px",
-              fontWeight: 700,
-              letterSpacing: "0.3em",
-              color: "var(--text-muted)",
-              opacity: 0.5,
-            }}
-          >
+          <p style={{ fontSize: "11px", fontWeight: 800, letterSpacing: "0.32em", color: "var(--text-3)", opacity: 0.45 }}>
             B Y U N D
           </p>
         </div>

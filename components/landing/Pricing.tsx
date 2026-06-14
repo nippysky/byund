@@ -15,7 +15,7 @@ const TIERS = [
       "3 users",
       "Monthly & quarterly reviews",
       "Basic findings tracking",
-      "Evidence uploads (1GB)",
+      "Evidence uploads (1 GB)",
       "Activity log (30 days)",
     ],
     cta: "Join Waitlist",
@@ -32,7 +32,7 @@ const TIERS = [
       "Unlimited users",
       "All review frequencies",
       "Full findings & evidence workflow",
-      "Storage 25GB",
+      "Storage 25 GB",
       "Activity log (1 year)",
       "Email notifications",
       "Manager approval workflows",
@@ -62,26 +62,27 @@ const TIERS = [
 
 export default function Pricing() {
   return (
-    <section className="section" id="pricing">
+    <section className="section" id="pricing" style={{ borderTop: "1px solid var(--border)" }}>
       <div className="container">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
-          style={{ textAlign: "center", maxWidth: "520px", margin: "0 auto 64px" }}
+          style={{ textAlign: "center", maxWidth: "520px", margin: "0 auto 72px" }}
         >
-          <span className="badge badge-brand" style={{ marginBottom: "20px" }}>Pricing</span>
-          <h2 style={{ fontSize: "clamp(30px, 4vw, 50px)", fontWeight: 800, letterSpacing: "-0.04em", marginBottom: "14px" }}>
-            Simple. Transparent. Fair.
+          <span className="label" style={{ marginBottom: "20px", display: "block" }}>Pricing</span>
+          <h2 className="display-md" style={{ marginBottom: "16px" }}>
+            Simple.{" "}
+            <span className="text-brand">Transparent.</span>
+            {" "}Fair.
           </h2>
-          <p style={{ fontSize: "16px", color: "var(--text-secondary)", lineHeight: 1.65 }}>
-            Start free during early access. Pricing is designed to scale with your team,
-            not your ambition.
+          <p style={{ fontSize: "17px", color: "var(--text-2)", lineHeight: 1.7 }}>
+            Start free during early access. Pricing is designed to scale with your team, not your ambition.
           </p>
         </motion.div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(1,1fr)", gap: "16px", maxWidth: "1000px", margin: "0 auto" }} className="md:grid-cols-3">
+        <div className="grid-pricing">
           {TIERS.map((tier, i) => (
             <motion.div
               key={tier.name}
@@ -91,36 +92,51 @@ export default function Pricing() {
               transition={{ delay: i * 0.1, duration: 0.55, ease: [0.23, 1, 0.32, 1] }}
               style={{
                 borderRadius: "20px",
-                padding: "36px 32px",
+                padding: "40px 36px",
                 display: "flex",
                 flexDirection: "column",
                 position: "relative",
                 overflow: "hidden",
                 background: tier.primary
-                  ? "linear-gradient(145deg, rgba(109,86,250,0.14) 0%, rgba(109,86,250,0.05) 100%)"
-                  : "rgba(255,255,255,0.025)",
+                  ? "linear-gradient(145deg, var(--brand-sub2) 0%, var(--brand-sub) 100%)"
+                  : "var(--surface-1)",
                 border: tier.primary
-                  ? "1px solid rgba(109,86,250,0.35)"
-                  : "1px solid rgba(255,255,255,0.07)",
+                  ? "1px solid rgba(114,96,251,0.35)"
+                  : "1px solid var(--border)",
               }}
             >
               {tier.primary && (
-                <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "2px", background: "linear-gradient(90deg, var(--brand-dark), var(--brand-light))" }} />
+                <div style={{
+                  position: "absolute", top: 0, left: 0, right: 0, height: "2px",
+                  background: "linear-gradient(90deg, var(--brand-lo), var(--brand-hi))",
+                }} />
               )}
               {tier.primary && (
-                <span className="badge badge-brand" style={{ position: "absolute", top: "20px", right: "20px", fontSize: "10px" }}>Popular</span>
+                <span style={{
+                  position: "absolute", top: "20px", right: "20px",
+                  fontSize: "10px", fontWeight: 700, padding: "4px 10px",
+                  borderRadius: "6px", background: "var(--brand-sub2)",
+                  color: "var(--brand-hi)", border: "1px solid rgba(114,96,251,0.3)",
+                  letterSpacing: "0.04em", textTransform: "uppercase",
+                }}>Popular</span>
               )}
 
-              <p style={{ fontSize: "13px", fontWeight: 700, color: tier.primary ? "var(--brand-light)" : "var(--text-muted)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "16px" }}>
+              <p style={{
+                fontSize: "12px", fontWeight: 700, letterSpacing: "0.07em",
+                textTransform: "uppercase", marginBottom: "16px",
+                color: tier.primary ? "var(--brand-hi)" : "var(--text-3)",
+              }}>
                 {tier.name}
               </p>
-              <p style={{ fontSize: "clamp(28px,3vw,38px)", fontWeight: 800, letterSpacing: "-0.04em", marginBottom: "4px" }}>{tier.price}</p>
-              <p style={{ fontSize: "12px", color: "var(--text-muted)", marginBottom: "16px" }}>{tier.sub}</p>
-              <p style={{ fontSize: "14px", color: "var(--text-secondary)", lineHeight: 1.6, marginBottom: "28px" }}>{tier.desc}</p>
+              <p style={{ fontSize: "clamp(28px,3vw,40px)", fontWeight: 800, letterSpacing: "-0.045em", marginBottom: "4px", color: "var(--text-1)" }}>
+                {tier.price}
+              </p>
+              <p style={{ fontSize: "12px", color: "var(--text-3)", marginBottom: "18px" }}>{tier.sub}</p>
+              <p style={{ fontSize: "14px", color: "var(--text-2)", lineHeight: 1.7, marginBottom: "32px" }}>{tier.desc}</p>
 
-              <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: "10px", flex: 1, marginBottom: "32px" }}>
+              <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: "11px", flex: 1, marginBottom: "36px" }}>
                 {tier.features.map(f => (
-                  <li key={f} style={{ display: "flex", alignItems: "flex-start", gap: "10px", fontSize: "13px", color: "var(--text-secondary)" }}>
+                  <li key={f} style={{ display: "flex", alignItems: "flex-start", gap: "10px", fontSize: "13px", color: "var(--text-2)" }}>
                     <Check size={14} color="var(--success)" style={{ marginTop: "1px", flexShrink: 0 }} />
                     {f}
                   </li>
@@ -130,7 +146,7 @@ export default function Pricing() {
               <Link
                 href={tier.href}
                 className={tier.primary ? "btn btn-primary btn-md" : "btn btn-ghost btn-md"}
-                style={{ justifyContent: "center", gap: "8px" }}
+                style={{ justifyContent: "center" }}
               >
                 {tier.cta} <ArrowRight size={14} />
               </Link>

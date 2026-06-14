@@ -1,38 +1,84 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { Activity, Lock, RefreshCw, Database } from "lucide-react";
+import { motion, useInView } from "framer-motion";
+import { useRef } from "react";
 
 const STATS = [
-  { value: "9",    label: "Asset Types Supported", icon: <Database size={18} /> },
-  { value: "6",    label: "Access Roles",           icon: <Lock size={18} /> },
-  { value: "100%", label: "Audit Trail Coverage",   icon: <Activity size={18} /> },
-  { value: "4",    label: "Review Frequencies",     icon: <RefreshCw size={18} /> },
+  { n: "9",   unit: "",   label: "Asset types tracked",   sub: "Server to SSL cert"        },
+  { n: "100", unit: "%",  label: "Audit trail coverage",  sub: "Every action logged"       },
+  { n: "<48", unit: "h",  label: "Setup to first review", sub: "No professional services"  },
+  { n: "∞",   unit: "",   label: "Teams & users",         sub: "RBAC roles built in"       },
 ];
 
 export default function ForDevelopers() {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-100px" });
+
   return (
-    <section className="section-sm" style={{ borderTop: "1px solid rgba(255,255,255,0.05)", borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(255,255,255,0.015)" }}>
+    <section ref={ref} className="section" style={{ borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)", background: "var(--bg-elevated)" }}>
       <div className="container">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: "2px" }} className="md:grid-cols-4">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.5 }}
+          style={{ textAlign: "center", marginBottom: "72px" }}
+        >
+          <span className="label" style={{ marginBottom: "16px", display: "block" }}>By the numbers</span>
+          <h2 className="display-md" style={{ maxWidth: "580px", margin: "0 auto 18px" }}>
+            Built for teams that{" "}
+            <span className="text-brand">move fast</span>
+          </h2>
+          <p style={{ fontSize: "17px", color: "var(--text-2)", maxWidth: "480px", margin: "0 auto", lineHeight: 1.7 }}>
+            BYUND Governance is engineered to be lightweight, fast to deploy, and scalable from 10 to 10,000 assets.
+          </p>
+        </motion.div>
+
+        <div
+          className="grid-4-stats"
+          style={{ border: "1px solid var(--border)", borderRadius: "20px", overflow: "hidden" }}
+        >
           {STATS.map((s, i) => (
             <motion.div
               key={s.label}
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ delay: i * 0.08, duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
+              initial={{ opacity: 0, y: 24 }}
+              animate={inView ? { opacity: 1, y: 0 } : {}}
+              transition={{ delay: 0.15 + i * 0.1, duration: 0.55, ease: [0.23, 1, 0.32, 1] }}
               style={{
-                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                padding: "40px 24px", textAlign: "center",
-                borderRight: i < 3 ? "1px solid rgba(255,255,255,0.05)" : "none",
+                padding: "48px 36px",
+                borderRight: i < 3 ? "1px solid var(--border)" : "none",
+                background: "var(--surface-1)",
+                position: "relative",
+                overflow: "hidden",
               }}
             >
-              <div style={{ color: "var(--brand-light)", marginBottom: "12px", opacity: 0.8 }}>{s.icon}</div>
-              <p style={{ fontSize: "clamp(36px, 4vw, 52px)", fontWeight: 800, letterSpacing: "-0.05em", lineHeight: 1 }} className="text-gradient">
-                {s.value}
-              </p>
-              <p style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: "8px", fontWeight: 500 }}>{s.label}</p>
+              <div style={{
+                position: "absolute", inset: 0,
+                background: "radial-gradient(ellipse at top left, var(--brand-sub) 0%, transparent 65%)",
+                pointerEvents: "none",
+              }} />
+              <div style={{ position: "relative" }}>
+                <div style={{ display: "flex", alignItems: "baseline", gap: "2px", marginBottom: "10px" }}>
+                  <span style={{
+                    fontSize: "clamp(44px, 4.5vw, 68px)",
+                    fontWeight: 900,
+                    letterSpacing: "-0.06em",
+                    lineHeight: 1,
+                    background: "linear-gradient(135deg, var(--text-1) 0%, var(--brand-hi) 100%)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                  }}>
+                    {s.n}
+                  </span>
+                  {s.unit && (
+                    <span style={{ fontSize: "clamp(22px, 2.5vw, 34px)", fontWeight: 800, color: "var(--brand-hi)", letterSpacing: "-0.04em" }}>
+                      {s.unit}
+                    </span>
+                  )}
+                </div>
+                <p style={{ fontSize: "15px", fontWeight: 700, color: "var(--text-1)", marginBottom: "6px" }}>{s.label}</p>
+                <p style={{ fontSize: "13px", color: "var(--text-3)" }}>{s.sub}</p>
+              </div>
             </motion.div>
           ))}
         </div>
