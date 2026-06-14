@@ -13,7 +13,8 @@ export default defineConfig({
   earlyAccess: true,
   schema: path.join("prisma", "schema.prisma"),
   datasource: {
-    url: process.env.DATABASE_URL!,
+    // Falls back to empty string during `prisma generate` (no DB connection needed there)
+    url: process.env.DATABASE_URL ?? "",
   },
   migrate: {
     async adapter(env: { DATABASE_URL: string }) {
