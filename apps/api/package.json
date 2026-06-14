@@ -31,6 +31,12 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },
+  "allowScripts": {
+    "argon2": true,
+    "prisma": true,
+    "@prisma/engines": true,
+    "@scarf/scarf": true
+  },
   "devDependencies": {
     "@nestjs/cli": "^11.0.0",
     "@nestjs/testing": "^11.0.0",
