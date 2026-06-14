@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const config: NextConfig = {
+  ...(!process.env.VERCEL && {
+    turbopack: {
+      root: __dirname,
+    },
+  }),
   async headers() {
     return [
       {

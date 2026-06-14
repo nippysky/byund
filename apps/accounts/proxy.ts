@@ -1,22 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
-const COOKIE_NAME = "byund_session";
+const COOKIE = "byund_session";
 const SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET ?? "byund-governance-secret-change-in-production"
 );
 
 /**
- * Accounts app middleware.
+ * Accounts app proxy.
  *
- * - If the user is already authenticated AND a ?next redirect is present,
- *   forward them immediately (they're just passing through for SSO).
  * - Auth pages (/login, /register) are always accessible.
+ * - Root (/) requires a valid session.
+ * - If already logged in AND ?next is present on /login or /register,
+ *   skip the form and immediately forward the user (transparent SSO pass-through).
  */
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname, searchParams } = req.nextUrl;
 
-  // Always allow API routes and static files
+  // Always allow API routes and Next.js internals
   if (
     pathname.startsWith("/api/") ||
     pathname.startsWith("/_next/") ||
@@ -25,9 +26,9 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  const token = req.cookies.get(COOKIE_NAME)?.value;
+  const token = req.cookies.get(COOKIE)?.value;
 
-  // Root page (/) — if logged in, pass through; else redirect to /login
+  // Root — must be authenticated
   if (pathname === "/") {
     if (!token) return NextResponse.redirect(new URL("/login", req.url));
     try {
@@ -38,21 +39,16 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // On /login or /register — if already logged in AND ?next is provided,
-  // skip showing the form and immediately redirect through SSO.
+  // /login or /register — if already authenticated AND ?next is present,
+  // skip the form and redirect straight through (SSO pass-through).
   if ((pathname === "/login" || pathname === "/register") && token) {
     try {
       await jwtVerify(token, SECRET);
       const next = searchParams.get("next");
-      if (next) {
-        // User is already authenticated — redirect to the app directly.
-        // The app will handle the cookie (shared via .byund.com or via callback).
-        return NextResponse.redirect(new URL(next));
-      }
-      // No ?next — show the accounts portal (root page)
+      if (next) return NextResponse.redirect(new URL(next));
       return NextResponse.redirect(new URL("/", req.url));
     } catch {
-      // Token expired/invalid — fall through to show login form
+      // expired — fall through and show the form
     }
   }
 
