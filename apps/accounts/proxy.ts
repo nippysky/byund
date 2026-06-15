@@ -7,17 +7,23 @@ const SECRET = new TextEncoder().encode(
 );
 
 /**
- * Accounts app proxy.
+ * Accounts SSO proxy (Next.js 16 — proxy.ts, not middleware.ts).
  *
- * - Auth pages (/login, /register) are always accessible.
- * - Root (/) requires a valid session.
- * - If already logged in AND ?next is present on /login or /register,
- *   skip the form and immediately forward the user (transparent SSO pass-through).
+ * Rules:
+ *  /api/*          → always pass through (route handlers own their auth)
+ *  /login, /register → always render (public pages)
+ *  /               → require valid session; else → /login
+ *
+ * Already-authenticated SSO pass-through:
+ *  If the user hits /login?next=<callback> while already logged in,
+ *  we skip the login form and redirect directly to <callback>?_token=<jwt>
+ *  so the receiving app can set its own domain cookie via /auth/callback.
+ *  This handles re-entry after governance logout without showing the login form.
  */
 export async function proxy(req: NextRequest) {
   const { pathname, searchParams } = req.nextUrl;
 
-  // Always allow API routes and Next.js internals
+  // Always pass API routes and Next.js internals
   if (
     pathname.startsWith("/api/") ||
     pathname.startsWith("/_next/") ||
@@ -28,27 +34,42 @@ export async function proxy(req: NextRequest) {
 
   const token = req.cookies.get(COOKIE)?.value;
 
-  // Root — must be authenticated
+  // Root (/) — requires authentication
   if (pathname === "/") {
     if (!token) return NextResponse.redirect(new URL("/login", req.url));
     try {
       await jwtVerify(token, SECRET);
       return NextResponse.next();
     } catch {
-      return NextResponse.redirect(new URL("/login", req.url));
+      // Expired — clear stale cookie and show login
+      const res = NextResponse.redirect(new URL("/login", req.url));
+      res.cookies.delete(COOKIE);
+      return res;
     }
   }
 
-  // /login or /register — if already authenticated AND ?next is present,
-  // skip the form and redirect straight through (SSO pass-through).
+  // /login or /register — if already authenticated, do SSO pass-through
   if ((pathname === "/login" || pathname === "/register") && token) {
     try {
       await jwtVerify(token, SECRET);
       const next = searchParams.get("next");
-      if (next) return NextResponse.redirect(new URL(next));
+
+      if (next) {
+        // CRITICAL: append ?_token=<jwt> so the receiving app's /auth/callback
+        // can set its own cookie. Without this the callback has no token and loops.
+        try {
+          const callbackUrl = new URL(next);
+          callbackUrl.searchParams.set("_token", token);
+          return NextResponse.redirect(callbackUrl.toString());
+        } catch {
+          // Invalid `next` URL — fall through to show login form
+        }
+      }
+
+      // No next param — send to home (product switcher)
       return NextResponse.redirect(new URL("/", req.url));
     } catch {
-      // expired — fall through and show the form
+      // Token expired — fall through and show the login form
     }
   }
 

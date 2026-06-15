@@ -21,7 +21,7 @@ interface AuthContextValue {
   workspace: CurrentWorkspace | null;
   role:      string | null;
   loading:   boolean;
-  signOut:   () => Promise<void>;
+  signOut:   () => void;
   refresh:   () => Promise<void>;
 }
 
@@ -50,10 +50,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => { fetchMe(); }, []);
 
-  const signOut = async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
-    setUser(null); setWorkspace(null); setRole(null);
-    window.location.href = "/login";
+  const signOut = () => {
+    // Full page navigation — lets the browser follow the redirect chain:
+    // governance /api/auth/logout → clears governance cookie → redirects to
+    // accounts /api/auth/logout → clears accounts cookie → redirects to
+    // accounts /login (user is fully signed out of all BYUND products)
+    //
+    // Using fetch() won't work here: cross-origin Set-Cookie headers are
+    // blocked in fetch responses, so the accounts cookie never gets cleared.
+    window.location.href = "/api/auth/logout";
   };
 
   return (

@@ -1,8 +1,30 @@
-import { NextResponse } from "next/server";
+export const runtime = "nodejs";
+
+import { type NextRequest, NextResponse } from "next/server";
 import { clearSessionCookie } from "@/lib/auth";
 
-export async function POST() {
-  const res = NextResponse.json({ ok: true });
-  clearSessionCookie(res);
+/**
+ * POST /api/auth/logout
+ *
+ * 1. Clears the byund_session cookie on the governance domain
+ * 2. Redirects to accounts /api/auth/logout so the accounts-domain
+ *    cookie is also cleared (true SSO logout — like Google)
+ * 3. Accounts logout then sends the user to accounts /login
+ */
+export async function POST(req: NextRequest) {
+  const host = req.headers.get("host") ?? "";
+
+  const accountsUrl = process.env.NEXT_PUBLIC_ACCOUNTS_URL;
+  const logoutDest  = accountsUrl
+    ? `${accountsUrl}/api/auth/logout`   // clear accounts cookie too → then accounts /login
+    : new URL("/login", req.url).toString();
+
+  const res = NextResponse.redirect(logoutDest, { status: 302 });
+  clearSessionCookie(res, host);
   return res;
+}
+
+// Support GET so a plain <a href="/api/auth/logout"> also works
+export async function GET(req: NextRequest) {
+  return POST(req);
 }
