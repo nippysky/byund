@@ -43,6 +43,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   get workspaceMember()  { return this.client.workspaceMember; }
   get workspaceSettings(){ return this.client.workspaceSettings; }
   get auditLog()         { return this.client.auditLog; }
+  get subscription()     { return this.client.subscription; }
 
   $transaction(...args: Parameters<typeof this.client.$transaction>) {
     return this.client.$transaction(...args);
