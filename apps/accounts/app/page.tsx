@@ -89,34 +89,9 @@ export default async function AccountsHome() {
 
       {/* Products */}
       <div style={{ maxWidth: 560, margin: "0 auto", padding: "0 24px 80px" }}>
-        <a
-          href={GOVERNANCE_URL}
-          style={{ textDecoration: "none", display: "block" }}
-          onMouseEnter={e => {
-            const el = e.currentTarget.firstChild as HTMLElement;
-            el.style.borderColor = "#7260fb";
-            el.style.boxShadow = "0 6px 32px rgba(114,96,251,0.18)";
-          }}
-          onMouseLeave={e => {
-            const el = e.currentTarget.firstChild as HTMLElement;
-            el.style.borderColor = "#1c1c2e";
-            el.style.boxShadow = "none";
-          }}
-        >
-          <div style={{
-            background: "#0b0b18", border: "1.5px solid #1c1c2e",
-            borderRadius: 18, padding: "28px 28px 24px",
-            display: "flex", alignItems: "center", gap: 20,
-            transition: "border-color 0.15s, box-shadow 0.15s",
-          }}>
-            <div style={{
-              width: 48, height: 48, borderRadius: 13, flexShrink: 0,
-              background: "rgba(114,96,251,0.12)", border: "1px solid rgba(114,96,251,0.25)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 24,
-            }}>
-              🛡️
-            </div>
+        <a href={GOVERNANCE_URL} className="app-card-link">
+          <div className="app-card">
+            <div className="app-card-icon">🛡️</div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Governance</div>
               <div style={{ fontSize: 13, color: "#555", lineHeight: 1.6 }}>
@@ -129,6 +104,25 @@ export default async function AccountsHome() {
           </div>
         </a>
       </div>
+
+      <style>{`
+        .app-card-link { text-decoration: none; display: block; }
+        .app-card {
+          background: #0b0b18; border: 1.5px solid #1c1c2e;
+          border-radius: 18px; padding: 28px 28px 24px;
+          display: flex; align-items: center; gap: 20px;
+          transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .app-card-link:hover .app-card {
+          border-color: #7260fb;
+          box-shadow: 0 6px 32px rgba(114,96,251,0.18);
+        }
+        .app-card-icon {
+          width: 48px; height: 48px; border-radius: 13px; flex-shrink: 0;
+          background: rgba(114,96,251,0.12); border: 1px solid rgba(114,96,251,0.25);
+          display: flex; align-items: center; justify-content: center; font-size: 24px;
+        }
+      `}</style>
 
       {/* Footer */}
       <div style={{ textAlign: "center", padding: "20px 24px", borderTop: "1px solid #111" }}>
