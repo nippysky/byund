@@ -84,7 +84,9 @@ function ShellInner({ children }: { children: ReactNode }) {
       if (!res.ok || !data?.ok) throw new Error("Logout failed");
 
       setProfile(null);
-      window.location.assign("/signin");
+      window.location.assign(
+        process.env.NEXT_PUBLIC_ACCOUNTS_URL ?? "https://byund-accounts.vercel.app"
+      );
     } catch {
       setIsLoggingOut(false);
       toast({ title: "Logout failed", variant: "error", message: "Try again." });

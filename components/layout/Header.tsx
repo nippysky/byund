@@ -2,6 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+
+const ACCOUNTS_URL =
+  process.env.NEXT_PUBLIC_ACCOUNTS_URL ?? "https://byund-accounts.vercel.app";
 import { ChevronDown, Menu, X, ShieldCheck, Sparkles, ExternalLink } from "lucide-react";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 
@@ -167,7 +170,7 @@ export default function Header() {
           {/* Right — desktop only */}
           <div style={{ display: "none", alignItems: "center", gap: "10px" }} className="hdr-right">
             <ThemeToggle />
-            <Link href="/signin" className="btn btn-ghost btn-sm">Sign in</Link>
+            <Link href={ACCOUNTS_URL} className="btn btn-ghost btn-sm">Sign in</Link>
             <Link href="/#waitlist" className="btn btn-primary btn-sm">Get Early Access</Link>
           </div>
 
@@ -238,7 +241,7 @@ export default function Header() {
           </div>
 
           <div style={{ marginTop: "auto", paddingTop: "32px", display: "flex", flexDirection: "column", gap: "10px" }}>
-            <Link href="/signin" className="btn btn-ghost btn-lg" onClick={() => setMobileOpen(false)} style={{ justifyContent: "center" }}>Sign in</Link>
+            <Link href={ACCOUNTS_URL} className="btn btn-ghost btn-lg" onClick={() => setMobileOpen(false)} style={{ justifyContent: "center" }}>Sign in</Link>
             <Link href="/#waitlist" className="btn btn-primary btn-lg" onClick={() => setMobileOpen(false)} style={{ justifyContent: "center" }}>Get Early Access</Link>
           </div>
 
