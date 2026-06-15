@@ -142,38 +142,66 @@ export function BillingClient({ email, name, currentPlan, paystackPublicKey }: P
       return;
     }
 
-    const handler = window.PaystackPop.setup({
-      key:       paystackPublicKey,
-      email,
-      // Paystack expects amount in kobo (1 NGN = 100 kobo)
-      amount:    plan.priceNGN * 100,
-      currency:  "NGN",
-      plan:      plan.paystackPlanCode,
-      firstname: name.split(" ")[0],
-      lastname:  name.split(" ").slice(1).join(" "),
-      metadata:  { plan: plan.id },
-      onClose: () => { setPaying(null); },
-      callback: async (response: { reference: string }) => {
-        setPaying(null);
-        setMessage("Verifying payment…");
-        try {
-          const res = await fetch("/api/billing/paystack/verify", {
-            method:  "POST",
-            headers: { "Content-Type": "application/json" },
-            body:    JSON.stringify({ reference: response.reference, plan: plan.id }),
-          });
-          if (res.ok) {
-            setMessage("Subscription activated! Refreshing…");
-            setTimeout(() => window.location.reload(), 1500);
-          } else {
-            setMessage("Payment received but activation delayed — refresh in a moment.");
+    // Safety net: reset if Paystack never fires onClose (popup blocked, bad plan code, etc.)
+    const safetyTimer = setTimeout(() => {
+      setPaying(null);
+      setMessage("Payment popup timed out — check your browser's popup blocker and try again.");
+    }, 20_000);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let handler: any;
+    try {
+      handler = window.PaystackPop.setup({
+        key:       paystackPublicKey,
+        email,
+        // Paystack expects amount in kobo (1 NGN = 100 kobo)
+        amount:    plan.priceNGN * 100,
+        currency:  "NGN",
+        plan:      plan.paystackPlanCode,
+        firstname: name.split(" ")[0],
+        lastname:  name.split(" ").slice(1).join(" "),
+        metadata:  { plan: plan.id },
+        onClose: () => {
+          clearTimeout(safetyTimer);
+          setPaying(null);
+        },
+        callback: async (response: { reference: string }) => {
+          clearTimeout(safetyTimer);
+          setPaying(null);
+          setMessage("Verifying payment…");
+          try {
+            const res = await fetch("/api/billing/paystack/verify", {
+              method:  "POST",
+              headers: { "Content-Type": "application/json" },
+              body:    JSON.stringify({ reference: response.reference, plan: plan.id }),
+            });
+            if (res.ok) {
+              setMessage("Subscription activated! Refreshing…");
+              setTimeout(() => window.location.reload(), 1500);
+            } else {
+              setMessage("Payment received but activation delayed — refresh in a moment.");
+            }
+          } catch {
+            setMessage("Payment received. Refresh to see your updated plan.");
           }
-        } catch {
-          setMessage("Payment received. Refresh to see your updated plan.");
-        }
-      },
-    });
-    handler.openIframe();
+        },
+      });
+    } catch (setupErr) {
+      clearTimeout(safetyTimer);
+      setPaying(null);
+      setMessage("Failed to initialise payment. Try again or contact support@byund.com.");
+      console.error("[billing] PaystackPop.setup error:", setupErr);
+      return;
+    }
+
+    try {
+      handler.openIframe();
+    } catch (openErr) {
+      clearTimeout(safetyTimer);
+      setPaying(null);
+      setMessage("Failed to open payment popup — disable popup blockers and try again.");
+      console.error("[billing] openIframe error:", openErr);
+    }
   }
 
   return (

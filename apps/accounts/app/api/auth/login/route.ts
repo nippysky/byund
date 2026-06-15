@@ -55,8 +55,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: msg }, { status: apiRes.status });
     }
 
-    const host = req.headers.get("host") ?? "";
-    const redirectTo = buildPostAuthRedirect(next as string | null, data.token as string, host);
+    const host        = req.headers.get("host") ?? "";
+    const marketingUrl = process.env.NEXT_PUBLIC_MARKETING_URL ?? "https://byund.vercel.app";
+    // When no ?next= is given, send the user to the marketing products page.
+    // We bypass buildPostAuthRedirect here so the JWT token isn't appended to
+    // a public marketing URL — the products page doesn't need it.
+    const redirectTo = (next as string | null)
+      ? buildPostAuthRedirect(next as string, data.token as string, host)
+      : `${marketingUrl}/products`;
 
     const res = NextResponse.json({
       redirectTo,
