@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import Link from "next/link";
-import { AccountNav, ThemeToggle } from "@/components/AccountNav";
+import { AccountNav } from "@/components/AccountNav";
+import { AvatarUpload } from "@/components/AvatarUpload";
 
 function Mark() {
   return (
@@ -36,10 +37,7 @@ export default async function SettingsPage() {
             <div style={{ fontSize: 7.5, fontWeight: 600, letterSpacing: "0.22em", color: "var(--text-3)", marginTop: 2, lineHeight: 1 }}>ACCOUNTS</div>
           </div>
         </Link>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <ThemeToggle />
-          <AccountNav name={session.name} email={session.email} initials={initials} />
-        </div>
+        <AccountNav name={session.name} email={session.email} initials={initials} />
       </header>
 
       {/* Content */}
@@ -70,23 +68,12 @@ export default async function SettingsPage() {
         <div style={{ background: "var(--surface-1)", border: "1px solid var(--border-med)", borderRadius: 16, overflow: "hidden" }}>
           <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--border)" }}>
             <h2 style={{ fontSize: 14, fontWeight: 700, color: "var(--text-1)" }}>Profile</h2>
-            <p style={{ fontSize: 12, color: "var(--text-3)", marginTop: 2 }}>Your public profile information.</p>
+            <p style={{ fontSize: 12, color: "var(--text-3)", marginTop: 2 }}>Your account photo and information.</p>
           </div>
 
-          {/* Avatar row */}
-          <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "20px 24px", borderBottom: "1px solid var(--border)" }}>
-            <div style={{
-              width: 56, height: 56, borderRadius: "50%",
-              background: "linear-gradient(135deg, #7260fb, #4f3dd4)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 18, fontWeight: 800, color: "#fff", flexShrink: 0,
-            }}>
-              {initials}
-            </div>
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 700 }}>{session.name}</div>
-              <div style={{ fontSize: 12, color: "var(--text-3)", marginTop: 2 }}>{session.email}</div>
-            </div>
+          {/* Avatar upload row */}
+          <div style={{ padding: "24px", borderBottom: "1px solid var(--border)" }}>
+            <AvatarUpload initials={initials} name={session.name} />
           </div>
 
           {/* Fields */}
@@ -125,7 +112,6 @@ export default async function SettingsPage() {
               fontSize: 12, fontWeight: 600, padding: "8px 16px", borderRadius: 8,
               border: "1px solid rgba(239,68,68,0.3)", color: "#ef4444",
               textDecoration: "none", whiteSpace: "nowrap",
-              transition: "background 0.12s",
             }}>
               Change password →
             </Link>

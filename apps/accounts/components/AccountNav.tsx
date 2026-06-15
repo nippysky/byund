@@ -2,12 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Sun, Moon, Settings, Shield, LogOut, ChevronDown } from "lucide-react";
+import { Sun, Moon, Settings, Shield, LogOut, ChevronDown, CreditCard } from "lucide-react";
+import Image from "next/image";
 
 interface Props {
-  name:     string;
-  email:    string;
-  initials: string;
+  name:      string;
+  email:     string;
+  initials:  string;
+  avatarUrl?: string;
 }
 
 // ── Theme helpers ─────────────────────────────────────────────────────────────
@@ -20,35 +22,50 @@ function getTheme(): "dark" | "light" {
 function applyTheme(t: "dark" | "light") {
   document.documentElement.setAttribute("data-theme", t);
   localStorage.setItem("byund-theme", t);
-  // Write to cookie so future page loads on ANY byund.com subdomain inherit it
   document.cookie = `byund-theme=${t}; path=/; max-age=31536000; SameSite=Lax`;
 }
 
-// ── Theme Toggle ──────────────────────────────────────────────────────────────
-export function ThemeToggle({ size = 15 }: { size?: number }) {
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
-  useEffect(() => { setTheme(getTheme()); }, []);
-  const toggle = () => {
-    const next = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    applyTheme(next);
-  };
+async function persistTheme(t: "dark" | "light") {
+  try {
+    await fetch("/api/user/preferences", {
+      method:  "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ themePreference: t }),
+    });
+  } catch {
+    // non-fatal — local + cookie already applied
+  }
+}
+
+// ── Avatar component ──────────────────────────────────────────────────────────
+function Avatar({ avatarUrl, initials, size }: { avatarUrl?: string; initials: string; size: number }) {
+  if (avatarUrl) {
+    return (
+      <Image
+        src={avatarUrl}
+        alt={initials}
+        width={size}
+        height={size}
+        style={{ borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
+      />
+    );
+  }
   return (
-    <button onClick={toggle} aria-label="Toggle theme" style={{
-      width: 34, height: 34, borderRadius: 9,
-      background: "var(--surface-2)", border: "1px solid var(--border-med)",
+    <div style={{
+      width: size, height: size, borderRadius: "50%",
+      background: "linear-gradient(135deg, #7260fb, #4f3dd4)",
       display: "flex", alignItems: "center", justifyContent: "center",
-      color: "var(--text-2)", cursor: "pointer", flexShrink: 0,
-      transition: "background 0.15s",
+      fontSize: size * 0.38, fontWeight: 800, color: "#fff", flexShrink: 0,
+      letterSpacing: "-0.01em",
     }}>
-      {theme === "dark" ? <Sun size={size} /> : <Moon size={size} />}
-    </button>
+      {initials}
+    </div>
   );
 }
 
-// ── Account Dropdown ──────────────────────────────────────────────────────────
-export function AccountNav({ name, email, initials }: Props) {
-  const [open, setOpen] = useState(false);
+// ── Account Nav ───────────────────────────────────────────────────────────────
+export function AccountNav({ name, email, initials, avatarUrl }: Props) {
+  const [open, setOpen]   = useState(false);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const ref = useRef<HTMLDivElement>(null);
 
@@ -66,6 +83,7 @@ export function AccountNav({ name, email, initials }: Props) {
     const next = theme === "dark" ? "light" : "dark";
     setTheme(next);
     applyTheme(next);
+    persistTheme(next);
   };
 
   return (
@@ -81,14 +99,7 @@ export function AccountNav({ name, email, initials }: Props) {
           cursor: "pointer", transition: "background 0.15s",
         }}
       >
-        <div style={{
-          width: 30, height: 30, borderRadius: "50%",
-          background: "linear-gradient(135deg, #7260fb, #4f3dd4)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 11, fontWeight: 800, color: "#fff", flexShrink: 0, letterSpacing: "-0.01em",
-        }}>
-          {initials}
-        </div>
+        <Avatar avatarUrl={avatarUrl} initials={initials} size={30} />
         <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-1)", maxWidth: 110, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {name}
         </span>
@@ -107,14 +118,7 @@ export function AccountNav({ name, email, initials }: Props) {
           {/* User info */}
           <div style={{ padding: "16px 16px 12px", borderBottom: "1px solid var(--border)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{
-                width: 36, height: 36, borderRadius: "50%", flexShrink: 0,
-                background: "linear-gradient(135deg, #7260fb, #4f3dd4)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 13, fontWeight: 800, color: "#fff",
-              }}>
-                {initials}
-              </div>
+              <Avatar avatarUrl={avatarUrl} initials={initials} size={36} />
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-1)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</div>
                 <div style={{ fontSize: 11, color: "var(--text-3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{email}</div>
@@ -125,8 +129,9 @@ export function AccountNav({ name, email, initials }: Props) {
           {/* Nav items */}
           <div style={{ padding: "6px 0" }}>
             {[
-              { href: "/settings",          Icon: Settings, label: "Account Settings" },
-              { href: "/settings/security", Icon: Shield,   label: "Security & Password" },
+              { href: "/settings",          Icon: Settings,    label: "Account Settings" },
+              { href: "/settings/security", Icon: Shield,      label: "Security & Password" },
+              { href: "/billing",           Icon: CreditCard,  label: "Billing & Plans" },
             ].map(({ href, Icon, label }) => (
               <Link key={href} href={href} onClick={() => setOpen(false)} style={{
                 display: "flex", alignItems: "center", gap: 10,

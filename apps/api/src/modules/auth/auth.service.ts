@@ -151,7 +151,7 @@ export class AuthService {
     const [user, member] = await Promise.all([
       this.prisma.user.findUnique({
         where:  { id: userId },
-        select: { id: true, name: true, email: true, avatarUrl: true, createdAt: true },
+        select: { id: true, name: true, email: true, avatarUrl: true, themePreference: true, createdAt: true },
       }),
       this.prisma.workspaceMember.findFirst({
         where:   { userId, workspaceId },
@@ -199,6 +199,52 @@ export class AuthService {
     });
 
     return { token };
+  }
+
+  // ────────────────────────────────────────────────────────────────
+  // UPDATE PREFERENCES (theme, etc.)
+  // ────────────────────────────────────────────────────────────────
+  async updatePreferences(userId: string, preferences: { themePreference?: string }) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data:  { themePreference: preferences.themePreference },
+      select: { id: true, themePreference: true },
+    });
+  }
+
+  // ────────────────────────────────────────────────────────────────
+  // UPDATE AVATAR
+  // ────────────────────────────────────────────────────────────────
+  async updateAvatar(userId: string, avatarUrl: string) {
+    return this.prisma.user.update({
+      where:  { id: userId },
+      data:   { avatarUrl },
+      select: { id: true, avatarUrl: true },
+    });
+  }
+
+  // ────────────────────────────────────────────────────────────────
+  // GET SUBSCRIPTION
+  // ────────────────────────────────────────────────────────────────
+  async getSubscription(userId: string) {
+    const sub = await this.prisma.subscription.findUnique({ where: { userId } });
+    return sub ?? { plan: "free", status: "active", userId };
+  }
+
+  // ────────────────────────────────────────────────────────────────
+  // UPSERT SUBSCRIPTION (called by Paystack webhook)
+  // ────────────────────────────────────────────────────────────────
+  async upsertSubscription(userId: string, data: {
+    plan?: string; status?: string;
+    paystackCustomerId?: string; paystackSubscriptionCode?: string;
+    paystackPlanCode?: string; paystackEmailToken?: string;
+    nextPaymentDate?: Date; currentPeriodEnd?: Date;
+  }) {
+    return this.prisma.subscription.upsert({
+      where:  { userId },
+      update: data,
+      create: { userId, ...data },
+    });
   }
 
   // ────────────────────────────────────────────────────────────────

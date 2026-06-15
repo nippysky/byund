@@ -1,5 +1,5 @@
 import {
-  Body, Controller, Post, Get, HttpCode, HttpStatus,
+  Body, Controller, Post, Get, Patch, HttpCode, HttpStatus,
   Res, UseGuards, Req, HttpException,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiCookieAuth } from "@nestjs/swagger";
@@ -10,6 +10,7 @@ import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
 import { RefreshDto } from "./dto/refresh.dto";
 import { ChangePasswordDto } from "./dto/change-password.dto";
+import { UpdatePreferencesDto, UpdateAvatarDto } from "./dto/update-preferences.dto";
 
 @ApiTags("Auth")
 @Controller("auth")
@@ -91,6 +92,47 @@ export class AuthController {
     @Req() req: FastifyRequest & { user: SessionPayload },
   ) {
     return this.auth.changePassword(req.user.sub, dto.currentPassword, dto.newPassword);
+  }
+
+  // ─────────────────────────────────────────────
+  // PATCH /v1/auth/preferences
+  // ─────────────────────────────────────────────
+  @Patch("preferences")
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AuthGuard("jwt"))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Update user preferences (theme etc.)" })
+  async updatePreferences(
+    @Body() dto: UpdatePreferencesDto,
+    @Req() req: FastifyRequest & { user: SessionPayload },
+  ) {
+    return this.auth.updatePreferences(req.user.sub, dto);
+  }
+
+  // ─────────────────────────────────────────────
+  // PATCH /v1/auth/avatar
+  // ─────────────────────────────────────────────
+  @Patch("avatar")
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AuthGuard("jwt"))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Update user avatar URL" })
+  async updateAvatar(
+    @Body() dto: UpdateAvatarDto,
+    @Req() req: FastifyRequest & { user: SessionPayload },
+  ) {
+    return this.auth.updateAvatar(req.user.sub, dto.avatarUrl);
+  }
+
+  // ─────────────────────────────────────────────
+  // GET /v1/auth/subscription
+  // ─────────────────────────────────────────────
+  @Get("subscription")
+  @UseGuards(AuthGuard("jwt"))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Get current user subscription" })
+  async getSubscription(@Req() req: FastifyRequest & { user: SessionPayload }) {
+    return this.auth.getSubscription(req.user.sub);
   }
 
   // ─────────────────────────────────────────────

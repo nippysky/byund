@@ -23,18 +23,42 @@ enum MemberRole {
 // ─── Models ──────────────────────────────────────────────────────────────────
 
 model User {
-  id           String   @id @default(cuid())
-  name         String
-  email        String   @unique
-  passwordHash String
-  avatarUrl    String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id              String   @id @default(cuid())
+  name            String
+  email           String   @unique
+  passwordHash    String
+  avatarUrl       String?
+  themePreference String?  @default("dark")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   workspaceMembers WorkspaceMember[]
   auditLogs        AuditLog[]
+  subscription     Subscription?
 
   @@map("users")
+}
+
+model Subscription {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  plan   String @default("free")   // free | starter | pro | business
+  status String @default("active") // active | cancelled | expired | past_due
+
+  // Paystack
+  paystackCustomerId       String?
+  paystackSubscriptionCode String?
+  paystackPlanCode         String?
+  paystackEmailToken       String?
+  nextPaymentDate          DateTime?
+  currentPeriodEnd         DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("subscriptions")
 }
 
 model Workspace {

@@ -19,7 +19,8 @@ export async function POST(req: NextRequest) {
     ? `${accountsUrl}/api/auth/logout`   // clear accounts cookie too → then accounts /login
     : new URL("/login", req.url).toString();
 
-  const res = NextResponse.redirect(logoutDest, { status: 302 });
+  // 303 See Other converts POST → GET on every hop — avoids 405 on destination pages
+  const res = NextResponse.redirect(logoutDest, { status: 303 });
   clearSessionCookie(res, host);
   return res;
 }

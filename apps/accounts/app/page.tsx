@@ -5,7 +5,7 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import Link from "next/link";
-import { AccountNav, ThemeToggle } from "@/components/AccountNav";
+import { AccountNav } from "@/components/AccountNav";
 
 const GOVERNANCE_URL = process.env.NEXT_PUBLIC_GOVERNANCE_URL ?? "https://byund-governance.vercel.app";
 
@@ -24,6 +24,17 @@ function Mark() {
     </svg>
   );
 }
+
+const PRODUCTS = [
+  {
+    href:        GOVERNANCE_URL,
+    icon:        "🛡️",
+    name:        "Governance",
+    description: "Asset reviews, findings & compliance",
+    accent:      "rgba(114,96,251,0.12)",
+    borderAccent:"rgba(114,96,251,0.25)",
+  },
+];
 
 export default async function AccountsHome() {
   const session = await getSession();
@@ -53,10 +64,8 @@ export default async function AccountsHome() {
           </div>
         </Link>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <ThemeToggle />
-          <AccountNav name={session.name} email={session.email} initials={initials} />
-        </div>
+        {/* Theme toggle lives only inside AccountNav dropdown now */}
+        <AccountNav name={session.name} email={session.email} initials={initials} />
       </header>
 
       {/* ── Hero ────────────────────────────────────────────────────── */}
@@ -74,18 +83,29 @@ export default async function AccountsHome() {
         </div>
 
         {/* ── Product Grid ─────────────────────────────────────────── */}
-        <div style={{ width: "100%", maxWidth: 640 }}>
-          <a href={GOVERNANCE_URL} className="product-card">
-            <div className="product-card-inner">
-              <div className="product-icon">🛡️</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 3, color: "var(--text-1)" }}>Governance</div>
-                <div style={{ fontSize: 13, color: "var(--text-3)", lineHeight: 1.55 }}>
-                  Asset reviews, findings & compliance audit trail
-                </div>
+        <div className="product-grid">
+          {PRODUCTS.map(p => (
+            <a key={p.href} href={p.href} className="product-card">
+              <div className="product-icon" style={{ background: p.accent, borderColor: p.borderAccent }}>
+                {p.icon}
               </div>
-              <div className="product-badge">Open →</div>
+              <div className="product-name">{p.name}</div>
+              <div className="product-desc">{p.description}</div>
+              <div className="product-cta">Open →</div>
+            </a>
+          ))}
+
+          {/* ── Suggest / Request an app ───────────────────────────── */}
+          <a href="mailto:hello@byund.com?subject=App+suggestion" className="product-card product-card--suggest">
+            <div className="product-icon product-icon--plus">
+              <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                <line x1="11" y1="4" x2="11" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                <line x1="4" y1="11" x2="18" y2="11" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
             </div>
+            <div className="product-name" style={{ color: "var(--text-3)" }}>Suggest an app</div>
+            <div className="product-desc">Have an idea? Tell us what you'd like to see next on BYUND.</div>
+            <div className="product-cta" style={{ color: "var(--text-3)" }}>Send idea →</div>
           </a>
         </div>
       </main>
@@ -113,32 +133,75 @@ export default async function AccountsHome() {
 
       {/* ── CSS ─────────────────────────────────────────────────────── */}
       <style>{`
+        .product-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+          gap: 16px;
+          width: 100%;
+          max-width: 680px;
+        }
         .product-card {
-          display: block;
-          text-decoration: none;
-          border-radius: 16px;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 12px;
+          padding: 24px 20px;
+          border-radius: 18px;
           background: var(--surface-1);
           border: 1.5px solid var(--border-med);
+          text-decoration: none;
+          color: inherit;
           transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+          aspect-ratio: 1;
+          justify-content: flex-end;
         }
         .product-card:hover {
           border-color: var(--brand);
-          box-shadow: 0 8px 36px rgba(114,96,251,0.16);
-          transform: translateY(-1px);
+          box-shadow: 0 8px 36px rgba(114,96,251,0.15);
+          transform: translateY(-2px);
         }
-        .product-card-inner {
-          display: flex; align-items: center; gap: 18px; padding: 22px 24px;
+        .product-card--suggest {
+          border-style: dashed;
+          border-color: var(--border);
+        }
+        .product-card--suggest:hover {
+          border-color: var(--text-3);
+          box-shadow: none;
         }
         .product-icon {
-          width: 48px; height: 48px; border-radius: 13px; flex-shrink: 0;
-          background: var(--brand-sub); border: 1px solid rgba(114,96,251,0.22);
-          display: flex; align-items: center; justify-content: center; font-size: 22px;
+          width: 52px; height: 52px; border-radius: 14px;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 24px;
+          border: 1px solid transparent;
+          flex-shrink: 0;
         }
-        .product-badge {
-          font-size: 11px; font-weight: 700; color: var(--brand-hi);
-          background: var(--brand-sub); border: 1px solid rgba(114,96,251,0.25);
-          border-radius: 6px; padding: 4px 10px; letter-spacing: 0.03em; flex-shrink: 0;
-          white-space: nowrap;
+        .product-icon--plus {
+          background: var(--surface-2) !important;
+          border-color: var(--border-med) !important;
+          color: var(--text-3);
+        }
+        .product-name {
+          font-size: 15px;
+          font-weight: 700;
+          color: var(--text-1);
+          line-height: 1.2;
+        }
+        .product-desc {
+          font-size: 12px;
+          color: var(--text-3);
+          line-height: 1.5;
+          flex: 1;
+        }
+        .product-cta {
+          font-size: 11px;
+          font-weight: 700;
+          color: var(--brand-hi);
+          letter-spacing: 0.02em;
+        }
+        @media (max-width: 480px) {
+          .product-grid {
+            grid-template-columns: 1fr 1fr;
+          }
         }
       `}</style>
     </div>

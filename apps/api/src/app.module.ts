@@ -6,6 +6,7 @@ import { WorkspacesModule } from "./modules/workspaces/workspaces.module";
 import { AssetsModule } from "./modules/assets/assets.module";
 import { ReviewsModule } from "./modules/reviews/reviews.module";
 import { FindingsModule } from "./modules/findings/findings.module";
+import { BillingModule }  from "./modules/billing/billing.module";
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { FindingsModule } from "./modules/findings/findings.module";
     AssetsModule,
     ReviewsModule,
     FindingsModule,
+    BillingModule,
   ],
 })
 export class AppModule {}
