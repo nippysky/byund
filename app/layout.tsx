@@ -237,7 +237,7 @@ export default function RootLayout({
         {/* ── Theme flash prevention ── */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('byund-theme')||((window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark');document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`,
+            __html: `(function(){try{var c=document.cookie.match(/byund-theme=([^;]+)/);var t=localStorage.getItem('byund-theme')||(c&&c[1])||((window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark');document.documentElement.setAttribute('data-theme',t);localStorage.setItem('byund-theme',t);document.cookie='byund-theme='+t+'; path=/; max-age=31536000; SameSite=Lax';}catch(e){}})();`,
           }}
         />
 

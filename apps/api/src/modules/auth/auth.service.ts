@@ -202,6 +202,32 @@ export class AuthService {
   }
 
   // ────────────────────────────────────────────────────────────────
+  // CHANGE PASSWORD
+  // ────────────────────────────────────────────────────────────────
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new UnauthorizedException("User not found");
+
+    // Verify current password (argon2 or legacy bcrypt)
+    let valid = false;
+    if (user.passwordHash.startsWith("$argon2")) {
+      valid = await argon2.verify(user.passwordHash, currentPassword);
+    } else {
+      valid = await bcryptjs.compare(currentPassword, user.passwordHash);
+    }
+    if (!valid) throw new UnauthorizedException("Current password is incorrect");
+
+    // Hash new password with argon2id
+    const newHash = await argon2.hash(newPassword, {
+      type: argon2.argon2id, memoryCost: 65_536, timeCost: 3, parallelism: 1,
+    });
+
+    await this.prisma.user.update({ where: { id: userId }, data: { passwordHash: newHash } });
+    this.logger.log(`Password changed for user ${user.email}`);
+    return { ok: true };
+  }
+
+  // ────────────────────────────────────────────────────────────────
   // COOKIE OPTIONS (shared with controller)
   // ────────────────────────────────────────────────────────────────
   cookieOptions(clear = false) {

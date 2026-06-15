@@ -9,6 +9,7 @@ import { AuthService, type SessionPayload } from "./auth.service";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
 import { RefreshDto } from "./dto/refresh.dto";
+import { ChangePasswordDto } from "./dto/change-password.dto";
 
 @ApiTags("Auth")
 @Controller("auth")
@@ -74,6 +75,22 @@ export class AuthController {
     const result = await this.auth.refresh(token);
     res.setCookie(this.auth.COOKIE_NAME, result.token, this.auth.cookieOptions());
     return result;
+  }
+
+  // ─────────────────────────────────────────────
+  // POST /v1/auth/change-password
+  // ─────────────────────────────────────────────
+  @Post("change-password")
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AuthGuard("jwt"))
+  @ApiBearerAuth()
+  @ApiCookieAuth("byund_session")
+  @ApiOperation({ summary: "Change the authenticated user's password" })
+  async changePassword(
+    @Body() dto: ChangePasswordDto,
+    @Req() req: FastifyRequest & { user: SessionPayload },
+  ) {
+    return this.auth.changePassword(req.user.sub, dto.currentPassword, dto.newPassword);
   }
 
   // ─────────────────────────────────────────────
