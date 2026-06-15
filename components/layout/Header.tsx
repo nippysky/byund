@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
-const ACCOUNTS_URL =
-  process.env.NEXT_PUBLIC_ACCOUNTS_URL ?? "https://byund-accounts.vercel.app";
+const ACCOUNTS_URL   = process.env.NEXT_PUBLIC_ACCOUNTS_URL   ?? "https://byund-accounts.vercel.app";
+const GOVERNANCE_URL = process.env.NEXT_PUBLIC_GOVERNANCE_URL ?? "https://byund-governance.vercel.app";
 import { ChevronDown, Menu, X, ShieldCheck, Sparkles, ExternalLink } from "lucide-react";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 
@@ -31,8 +31,8 @@ const PRODUCTS = [
     icon: <ShieldCheck size={18} />,
     name: "BYUND Governance",
     sub: "Asset ownership, reviews & audit",
-    href: "/governance",
-    status: "Available Soon",
+    href: `${ACCOUNTS_URL}/login?next=${encodeURIComponent(GOVERNANCE_URL)}`,
+    status: "Live Now",
     live: true,
   },
   {

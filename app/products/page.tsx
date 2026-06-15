@@ -6,6 +6,15 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { ArrowRight, ShieldCheck } from "lucide-react";
 
+// ── SSO URLs ─────────────────────────────────────────────────────────────────
+const ACCOUNTS_URL    = process.env.NEXT_PUBLIC_ACCOUNTS_URL    ?? "https://byund-accounts.vercel.app";
+const GOVERNANCE_URL  = process.env.NEXT_PUBLIC_GOVERNANCE_URL  ?? "https://byund-governance.vercel.app";
+
+function ssoLink(dest: string) {
+  return `${ACCOUNTS_URL}/login?next=${encodeURIComponent(dest)}`;
+}
+
+// ── Animation ─────────────────────────────────────────────────────────────────
 const FADE = (i: number) => ({
   hidden: { opacity: 0, y: 18 },
   show: {
@@ -14,10 +23,13 @@ const FADE = (i: number) => ({
   },
 });
 
+// ── Product catalogue (shared source of truth) ────────────────────────────────
 const PRODUCTS = [
   {
     slug:      "governance",
-    href:      "/governance",
+    // Live: routes through SSO login, lands in Governance after auth
+    href:      ssoLink(GOVERNANCE_URL),
+    ctaLabel:  "Open Governance",
     icon:      <ShieldCheck size={28} strokeWidth={1.6} />,
     iconColor: "#7260fb",
     iconBg:    "rgba(114,96,251,0.1)",
@@ -38,6 +50,7 @@ const PRODUCTS = [
   {
     slug:      "analytics",
     href:      null,
+    ctaLabel:  "In development",
     icon:      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M3 3v18h18"/><path d="M18 9l-5 5-3-3-4 4"/></svg>,
     iconColor: "#06b6d4",
     iconBg:    "rgba(6,182,212,0.1)",
@@ -58,6 +71,7 @@ const PRODUCTS = [
   {
     slug:      "hr",
     href:      null,
+    ctaLabel:  "In development",
     icon:      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.85"/></svg>,
     iconColor: "#f59e0b",
     iconBg:    "rgba(245,158,11,0.1)",
@@ -152,11 +166,11 @@ export default function ProductsPage() {
                       fontSize: 13, fontWeight: 700, color: "var(--brand)",
                       textDecoration: "none",
                     }}>
-                      Learn more <ArrowRight size={13} />
+                      {product.ctaLabel} <ArrowRight size={13} />
                     </Link>
                   ) : (
                     <span style={{ fontSize: 13, color: "var(--text-secondary)", fontStyle: "italic" }}>
-                      In development
+                      {product.ctaLabel}
                     </span>
                   )}
                 </div>
@@ -190,13 +204,13 @@ export default function ProductsPage() {
               Ready to get started with BYUND Governance?
             </p>
             <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-              <Link href="/governance" style={{
+              <Link href={ssoLink(GOVERNANCE_URL)} style={{
                 display: "inline-flex", alignItems: "center", gap: 7,
                 fontSize: 14, fontWeight: 700,
                 background: "var(--brand)", color: "#fff",
                 padding: "12px 24px", borderRadius: 12, textDecoration: "none",
               }}>
-                Explore Governance <ArrowRight size={14} />
+                Open Governance <ArrowRight size={14} />
               </Link>
               <Link href="/contact" style={{
                 display: "inline-flex", alignItems: "center", gap: 7,
