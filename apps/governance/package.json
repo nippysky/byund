@@ -12,7 +12,9 @@
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
-    "prepare": "echo skip"
+    "prepare": "echo skip",
+    "db:seed": "node scripts/seed-dev.mjs",
+    "db:reset": "node scripts/seed-dev.mjs"
   },
   "dependencies": {
     "@fastify/cookie": "^11.0.2",
