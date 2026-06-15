@@ -286,13 +286,9 @@ function BrandPanel() {
         </div>
       </div>
 
-      {/* Footer */}
-      <div style={{ position: "relative", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      {/* No footer here — only one footer on the page (bottom of right panel) */}
+      <div style={{ position: "relative" }}>
         <p style={{ fontSize: 11, color: "var(--text-3)" }}>© {new Date().getFullYear()} NIPPYSKY LIMITED</p>
-        <div style={{ display: "flex", gap: 14 }}>
-          <Link href="https://byund.com/privacy" style={{ fontSize: 11, color: "var(--text-3)", textDecoration: "none" }}>Privacy</Link>
-          <Link href="https://byund.com/terms"   style={{ fontSize: 11, color: "var(--text-3)", textDecoration: "none" }}>Terms</Link>
-        </div>
       </div>
     </div>
   );
