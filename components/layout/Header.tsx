@@ -82,11 +82,11 @@ function ProductsDropdown({ onClose }: { onClose: () => void }) {
         </Link>
       ))}
       <div style={{ margin: "8px 0 4px", height: "1px", background: "var(--border)" }} />
-      <div style={{ padding: "10px 16px" }}>
-        <p style={{ fontSize: "12px", color: "var(--text-3)" }}>
-          One BYUND account works across all products.{" "}
-          <Link href="/#waitlist" style={{ color: "var(--brand-hi)", fontWeight: 600 }}>Learn more →</Link>
-        </p>
+      <div style={{ padding: "10px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <p style={{ fontSize: "12px", color: "var(--text-3)" }}>One account for all BYUND products.</p>
+        <Link href="/products" onClick={onClose} style={{ fontSize: "12px", color: "var(--brand-hi)", fontWeight: 700, whiteSpace: "nowrap" }}>
+          See all →
+        </Link>
       </div>
     </div>
   );
