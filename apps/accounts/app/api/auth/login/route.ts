@@ -55,14 +55,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: msg }, { status: apiRes.status });
     }
 
-    const host        = req.headers.get("host") ?? "";
+    const host         = req.headers.get("host") ?? "";
     const marketingUrl = process.env.NEXT_PUBLIC_MARKETING_URL ?? "https://byund.vercel.app";
-    // When no ?next= is given, send the user to the marketing products page.
-    // We bypass buildPostAuthRedirect here so the JWT token isn't appended to
-    // a public marketing URL — the products page doesn't need it.
-    const redirectTo = (next as string | null)
-      ? buildPostAuthRedirect(next as string, data.token as string, host)
-      : `${marketingUrl}/products`;
+
+    // When no ?next= is given:
+    //   Route through marketing /auth/callback so byund.vercel.app gets its own
+    //   session cookie — that lets the marketing Header show the logged-in avatar.
+    //   buildPostAuthRedirect handles the cross-domain _token append automatically.
+    const effectiveNext = (next as string | null) || `${marketingUrl}/auth/callback?next=/products`;
+    const redirectTo = buildPostAuthRedirect(effectiveNext, data.token as string, host);
 
     const res = NextResponse.json({
       redirectTo,
