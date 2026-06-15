@@ -2,7 +2,7 @@
 import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff, Lock, Mail, ShieldCheck, Layers, Activity, Sun, Moon, Zap } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, Sun, Moon, Zap } from "lucide-react";
 
 // ── Theme toggle (self-contained) ────────────────────────────────────────────
 function ThemeToggle() {
@@ -219,11 +219,6 @@ function LoginForm() {
 }
 
 // ── Left brand panel ──────────────────────────────────────────────────────────
-const PRODUCTS = [
-  { icon: <ShieldCheck size={15} />, name: "Governance",   desc: "Asset ownership, reviews & audit compliance" },
-  { icon: <Layers size={15} />,      name: "More coming",  desc: "Risk, Vendor & Compliance products" },
-  { icon: <Activity size={15} />,    name: "One account",  desc: "Sign in once, access everything" },
-];
 
 function BrandPanel() {
   return (
@@ -256,37 +251,21 @@ function BrandPanel() {
         </div>
       </Link>
 
-      {/* Main copy */}
+      {/* Main copy — timeless, no product-specific details */}
       <div style={{ position: "relative" }}>
-        <p style={{ fontSize: 11, fontWeight: 700, color: "var(--brand-hi)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 18 }}>
-          One account. All products.
-        </p>
-        <h2 style={{ fontSize: "clamp(26px, 2.6vw, 38px)", fontWeight: 800, letterSpacing: "-0.04em", lineHeight: 1.1, marginBottom: 18, color: "var(--text-1)" }}>
-          Your BYUND account<br />works everywhere.
+        <h2 style={{ fontSize: "clamp(30px, 3vw, 46px)", fontWeight: 800, letterSpacing: "-0.045em", lineHeight: 1.08, marginBottom: 20, color: "var(--text-1)" }}>
+          One account.
         </h2>
-        <p style={{ fontSize: 15, color: "var(--text-muted)", lineHeight: 1.8, marginBottom: 40, maxWidth: 320 }}>
-          Sign in once to access every BYUND product — just like one Google account works across Gmail, Drive, and Docs.
+        <p style={{ fontSize: "clamp(18px, 2vw, 26px)", fontWeight: 300, letterSpacing: "-0.02em", color: "var(--text-muted)", lineHeight: 1.4, marginBottom: 48 }}>
+          Sign in once,<br />access everything.
         </p>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          {PRODUCTS.map(p => (
-            <div key={p.name} style={{ display: "flex", alignItems: "center", gap: 14 }}>
-              <div style={{
-                width: 32, height: 32, borderRadius: 9,
-                background: "var(--brand-sub2)", border: "1px solid rgba(114,96,251,0.22)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                color: "var(--brand-hi)", flexShrink: 0,
-              }}>{p.icon}</div>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-1)", lineHeight: 1.3 }}>{p.name}</div>
-                <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{p.desc}</div>
-              </div>
-            </div>
-          ))}
-        </div>
+        {/* Divider accent */}
+        <div style={{ width: 40, height: 3, borderRadius: 99, background: "var(--brand)", marginBottom: 28, opacity: 0.7 }} />
+        <p style={{ fontSize: 14, color: "var(--text-3)", lineHeight: 1.8, maxWidth: 300 }}>
+          Your BYUND account works across every product we build — now and in the future.
+        </p>
       </div>
 
-      {/* No footer here — only one footer on the page (bottom of right panel) */}
       <div style={{ position: "relative" }}>
         <p style={{ fontSize: 11, color: "var(--text-3)" }}>© {new Date().getFullYear()} NIPPYSKY LIMITED</p>
       </div>

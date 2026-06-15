@@ -38,8 +38,9 @@ export function buildPostAuthRedirect(
 ): string {
   const safeNext = safeRedirectUrl(next);
   if (!safeNext) {
-    // Fallback: go to the default BYUND governance app
-    return process.env.NEXT_PUBLIC_DEFAULT_APP_URL ?? "/";
+    // No ?next= → land on BYUND Accounts product switcher.
+    // User picks which app to open from there.
+    return "/";
   }
 
   // On *.byund.com the cookie is Domain=.byund.com — shared automatically.
