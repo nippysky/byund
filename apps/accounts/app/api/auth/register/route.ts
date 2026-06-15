@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
       { status: 201 },
     );
 
-    setSessionCookie(data.token as string, res);
+    setSessionCookie(data.token as string, res, host);
     return res;
   } catch (e) {
     console.error("[accounts/register] unexpected:", e);

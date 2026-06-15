@@ -50,25 +50,23 @@ export async function getSession(): Promise<SessionPayload | null> {
 }
 
 /**
- * Set the shared SSO cookie.
- * In production with *.byund.com custom domains: sets Domain=.byund.com so
- * ALL BYUND products share the session instantly — no callback needed.
- * In staging/Vercel preview: cookie is set per-domain.
+ * CRITICAL: Only set Domain=.byund.com when actually on a .byund.com host.
+ * Browsers silently reject cookies where the domain attribute doesn't match
+ * the response origin. On vercel.app / localhost, omit domain entirely.
  */
-export function setSessionCookie(token: string, response: Response) {
-  const isProd = process.env.NODE_ENV === "production";
-  const domain = isProd ? "; Domain=.byund.com" : "";
-  response.headers.append(
-    "Set-Cookie",
-    `${COOKIE_NAME}=${token}; HttpOnly; Path=/; Max-Age=${7 * 24 * 60 * 60}; SameSite=${isProd ? "None" : "Lax"}${isProd ? "; Secure" : ""}${domain}`
-  );
+function cookieHeader(token: string, maxAge: number, host?: string): string {
+  const isCustomDomain = !!host && (host === "byund.com" || host.endsWith(".byund.com"));
+  const isProd   = process.env.NODE_ENV === "production";
+  const secure   = isProd || isCustomDomain ? "; Secure" : "";
+  const domain   = isCustomDomain ? "; Domain=.byund.com" : "";
+  const sameSite = "; SameSite=Lax";
+  return `${COOKIE_NAME}=${token}; HttpOnly; Path=/; Max-Age=${maxAge}${secure}${sameSite}${domain}`;
 }
 
-export function clearSessionCookie(response: Response) {
-  const isProd = process.env.NODE_ENV === "production";
-  const domain = isProd ? "; Domain=.byund.com" : "";
-  response.headers.append(
-    "Set-Cookie",
-    `${COOKIE_NAME}=; HttpOnly; Path=/; Max-Age=0; SameSite=${isProd ? "None" : "Lax"}${isProd ? "; Secure" : ""}${domain}`
-  );
+export function setSessionCookie(token: string, response: Response, host?: string) {
+  response.headers.append("Set-Cookie", cookieHeader(token, 7 * 24 * 60 * 60, host));
+}
+
+export function clearSessionCookie(response: Response, host?: string) {
+  response.headers.append("Set-Cookie", cookieHeader("", 0, host));
 }

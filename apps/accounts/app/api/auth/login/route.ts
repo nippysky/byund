@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
       workspace: data.workspace,
     });
 
-    setSessionCookie(data.token as string, res);
+    setSessionCookie(data.token as string, res, host);
     return res;
   } catch (e) {
     console.error("[accounts/login] unexpected:", e);

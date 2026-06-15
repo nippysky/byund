@@ -5,10 +5,6 @@ const SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET ?? "byund-governance-secret-change-in-production"
 );
 
-/**
- * Cookie name — shared across ALL BYUND products for SSO.
- * The NestJS API (accounts.byund.com) sets this same cookie scoped to .byund.com.
- */
 export const COOKIE_NAME = "byund_session";
 
 export interface SessionPayload {
@@ -19,7 +15,6 @@ export interface SessionPayload {
   email:       string;
 }
 
-// Raw JWT shape — NestJS uses "sub", governance uses "userId"; support both
 interface RawJwt {
   sub?:        string;
   userId?:     string;
@@ -31,31 +26,26 @@ interface RawJwt {
 
 export async function createSession(payload: SessionPayload) {
   const raw: RawJwt = {
-    sub:         payload.userId,   // canonical SSO field
-    userId:      payload.userId,   // backward-compat field
+    sub:         payload.userId,
+    userId:      payload.userId,
     workspaceId: payload.workspaceId,
     role:        payload.role,
     name:        payload.name,
     email:       payload.email,
   };
-
-  const token = await new SignJWT(raw as unknown as Record<string, unknown>)
+  return new SignJWT(raw as unknown as Record<string, unknown>)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("7d")
     .sign(SECRET);
-  return token;
 }
 
 export async function verifySession(token: string): Promise<SessionPayload | null> {
   try {
     const { payload } = await jwtVerify(token, SECRET);
     const p = payload as unknown as RawJwt;
-
-    // Accept both "userId" (legacy governance) and "sub" (NestJS SSO)
     const userId = p.userId ?? p.sub;
     if (!userId || !p.workspaceId) return null;
-
     return {
       userId,
       workspaceId: p.workspaceId,
@@ -75,20 +65,24 @@ export async function getSession(): Promise<SessionPayload | null> {
   return verifySession(token);
 }
 
-export function setSessionCookie(token: string, response: Response) {
+/**
+ * Build cookie options that respect the actual host.
+ * CRITICAL: Setting Domain=.byund.com on a vercel.app origin causes
+ * browsers to silently reject the cookie. Only set domain on real byund.com hosts.
+ */
+function cookieHeader(token: string, maxAge: number, host?: string): string {
+  const isCustomDomain = !!host && (host === "byund.com" || host.endsWith(".byund.com"));
   const isProd = process.env.NODE_ENV === "production";
-  const domain = isProd ? "; Domain=.byund.com" : "";
-  response.headers.append(
-    "Set-Cookie",
-    `${COOKIE_NAME}=${token}; HttpOnly; Path=/; Max-Age=${7 * 24 * 60 * 60}; SameSite=${isProd ? "None" : "Lax"}${isProd ? "; Secure" : ""}${domain}`
-  );
+  const secure   = isProd || isCustomDomain ? "; Secure" : "";
+  const domain   = isCustomDomain ? "; Domain=.byund.com" : "";
+  const sameSite = "; SameSite=Lax";
+  return `${COOKIE_NAME}=${token}; HttpOnly; Path=/; Max-Age=${maxAge}${secure}${sameSite}${domain}`;
 }
 
-export function clearSessionCookie(response: Response) {
-  const isProd = process.env.NODE_ENV === "production";
-  const domain = isProd ? "; Domain=.byund.com" : "";
-  response.headers.append(
-    "Set-Cookie",
-    `${COOKIE_NAME}=; HttpOnly; Path=/; Max-Age=0; SameSite=${isProd ? "None" : "Lax"}${isProd ? "; Secure" : ""}${domain}`
-  );
+export function setSessionCookie(token: string, response: Response, host?: string) {
+  response.headers.append("Set-Cookie", cookieHeader(token, 7 * 24 * 60 * 60, host));
+}
+
+export function clearSessionCookie(response: Response, host?: string) {
+  response.headers.append("Set-Cookie", cookieHeader("", 0, host));
 }
